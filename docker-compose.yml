@@ -1,0 +1,49 @@
+services:
+  backend:
+    build: ./backend
+    container_name: backend
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./backend/.env
+    environment:
+      - PORT=5001
+      - API_URL=https://api.cdnproxy.top
+    command: "npm run start:prod"
+    networks:
+      - cdnproxy_net
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env.local
+    environment:
+      - API_URL=https://api.cdnproxy.top
+    command: "npm run start"
+    networks:
+      - cdnproxy_net
+
+  proxy-server:
+    build: ./proxy-server
+    container_name: proxy-server
+    env_file:
+      - ./proxy-server/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+    command: npm start
+    ports:
+      - "8080:8080"
+    networks:
+      - cdnproxy_net
+
+networks:
+  cdnproxy_net:
+    driver: bridge

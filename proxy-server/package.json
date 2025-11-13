@@ -1,0 +1,13 @@
+{
+  "name": "proxy-server",
+  "version": "2.0.0",
+  "description": "Fastify proxy server",
+  "main": "proxy-server-fastify.js",
+  "scripts": {
+    "start": "node proxy-server-fastify.js",
+    "update-npm": "npm install -g npm@latest"
+  },
+  "dependencies": {
+    "fastify": "^5.6.1"
+  }
+}

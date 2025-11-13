@@ -1,0 +1,47 @@
+{
+  "name": "frontend",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "NEXT_PRIVATE_BUILD_WORKER=webpack next dev",
+    "build": "next build",
+    "start": "next start -H 0.0.0.0 -p 3000",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@auth/neon-adapter": "^1.11.1",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.5",
+    "@mui/lab": "^7.0.1-beta.19",
+    "@mui/material": "^7.3.5",
+    "@mui/system": "^7.3.5",
+    "@mui/x-data-grid": "^8.17.0",
+    "@mui/x-date-pickers": "^8.17.0",
+    "@neondatabase/serverless": "^1.0.2",
+    "@prisma/client": "^6.19.0",
+    "@stackframe/stack": "",
+    "@types/speakeasy": "^2.0.10",
+    "axios": "^1.13.2",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
+    "next": "16.0.1",
+    "next-auth": "^5.0.0-beta.30",
+    "prisma": "^6.19.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "speakeasy": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.1",
+    "typescript": "^5"
+  }
+}

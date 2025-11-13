@@ -1,0 +1,69 @@
+{
+  "cache_rules": {
+    "static_files": {
+      "pattern": "*.{css,js,jpg,jpeg,png,gif,ico,svg,woff,woff2,ttf,eot}",
+      "cache_level": "cache_everything",
+      "edge_cache_ttl": 2592000,
+      "browser_cache_ttl": 2592000
+    },
+    "api_routes": {
+      "pattern": "/api/*",
+      "cache_level": "bypass",
+      "edge_cache_ttl": 0,
+      "browser_cache_ttl": 0
+    },
+    "auth_routes": {
+      "pattern": "/auth/*",
+      "cache_level": "bypass",
+      "edge_cache_ttl": 0,
+      "browser_cache_ttl": 0
+    },
+    "admin_routes": {
+      "pattern": "/admin/*",
+      "cache_level": "bypass",
+      "edge_cache_ttl": 0,
+      "browser_cache_ttl": 0
+    },
+    "proxy_routes": {
+      "pattern": "/proxy/*",
+      "cache_level": "standard",
+      "edge_cache_ttl": 300,
+      "browser_cache_ttl": 300
+    }
+  },
+  "security_rules": {
+    "rate_limiting": {
+      "api_endpoints": {
+        "threshold": 100,
+        "period": 60,
+        "action": "challenge"
+      },
+      "login_endpoints": {
+        "threshold": 10,
+        "period": 300,
+        "action": "block"
+      }
+    },
+    "firewall_rules": [
+      {
+        "expression": "(http.request.uri.path contains \"/admin\" and cf.threat_score > 10)",
+        "action": "challenge"
+      },
+      {
+        "expression": "(http.request.method eq \"POST\" and cf.threat_score > 20)",
+        "action": "challenge"
+      }
+    ]
+  },
+  "performance": {
+    "minify": {
+      "css": true,
+      "js": true,
+      "html": true
+    },
+    "compression": "gzip",
+    "http2": true,
+    "http3": true,
+    "early_hints": true
+  }
+}
