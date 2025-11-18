@@ -2,8 +2,14 @@
 import { useEffect, useState } from 'react';
 import { Card, Typography } from '@mui/material';
 
+type CartItem = {
+  id: string | number;
+  name: string;
+  status: string;
+};
+
 export default function AdminCartPage() {
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +32,7 @@ export default function AdminCartPage() {
           {cart.length === 0 ? (
             <li>Carrinho vazio.</li>
           ) : (
-            cart.map((item: any) => (
+            cart.map((item: CartItem) => (
               <li key={item.id}>{item.name} - {item.status}</li>
             ))
           )}

@@ -1,154 +1,185 @@
 "use client";
-import { useEffect, useState } from 'react';
-import { Card, Typography, List, ListItem, ListItemText } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
-import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, IconButton, MenuItem } from '@mui/material';
+import { useEffect, useState } from "react";
+import { Card, Typography, Button, Snackbar, Alert, CircularProgress, List, ListItem, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, MenuItem } from "@mui/material";
 import { Edit, Delete, ToggleOn, ToggleOff } from '@mui/icons-material';
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { createClient } from "../../../../utils/supabase/client";
+// Substituir Snackbar por react-toastify
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { DataGrid } from '@mui/x-data-grid';
 
-export default function SuperadminUsersPage() {
-  // Definição do tipo User
-  interface User {
-    id: number;
-    name: string;
-    email: string;
-    status: string;
-    // Adicione outros campos conforme necessário
-  }
+export interface User {
+  id: string;
+  email?: string;
+  name?: string;
+  company?: string;
+  whatsapp?: string;
+  role?: string;
+  status?: string;
+  banned?: boolean;
+  [key: string]: any;
+}
+
+export default function SuperAdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    company: '',
-    whatsapp: '+55',
-    password: '',
-    status: 'Ativo',
-  });
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [formData, setFormData] = useState<{
+    email?: string;
+    password?: string;
+    name?: string;
+    company?: string;
+    whatsapp?: string;
+    role?: string;
+    status?: string;
+    id?: string;
+  }>({});
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
-
-  const showSnackbar = (msg: string, severity: 'success' | 'error' = 'success') => {
-    setSnackbarMessage(msg);
-    setSnackbarSeverity(severity);
-    setSnackbarOpen(true);
-  };
-
-  const handleOpenModal = (user: any = null) => {
-    if (user) {
-      setEditMode(true);
-      setSelectedUser(user);
-      setFormData({
-        name: user.name || '',
-        email: user.email || '',
-        company: user.company || '',
-        whatsapp: user.whatsapp || '+55',
-        password: '',
-        status: user.status || 'Ativo',
-      });
-    } else {
-      setEditMode(false);
-      setSelectedUser(null);
-      setFormData({ name: '', email: '', company: '', whatsapp: '+55', password: '', status: 'Ativo' });
-    }
-    setModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalOpen(false);
-  };
-
-  const handleFormChange = (e: any) => {
-    const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
-  };
-
-  const { data: session, status } = useSession();
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success'|'error'>("success");
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "loading") return;
-    if (!session) {
-      router.push("/auth/login");
-    }
-  }, [session, status, router]);
+    // Verifica sessão via Supabase Auth
+    createClient().auth.getUser().then(({ data }) => {
+      if (!data.user) {
+        router.push("/auth/login");
+      }
+    });
+  }, [router]);
+
   useEffect(() => {
-    // Listar usuários via Neon Auth
-    fetch('/api/neon-auth/users')
-      .then(res => res.json())
-      .then(data => {
+    // Listar usuários via Supabase Admin API
+    async function fetchUsers() {
+      setLoading(true);
+      try {
+        const supabase = createClient();
+        // Busca usuários do Supabase Auth
+        const { data, error } = await supabase.auth.admin.listUsers();
+        if (error) throw error;
         setUsers(data.users || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      } catch (err) {
+        setSnackbarMessage("Erro ao carregar usuários.");
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+      }
+      setLoading(false);
+    }
+    fetchUsers();
   }, []);
 
   const handleSaveUser = async () => {
     try {
-      const method = editMode ? 'PUT' : 'POST';
-      const url = editMode ? `/api/neon-auth/users/${selectedUser.id}` : '/api/neon-auth/users';
-      const body = { ...formData };
-      if (!editMode && !body.password) {
-        showSnackbar('Senha obrigatória.', 'error');
-        return;
+      const supabase = createClient();
+      let result;
+      if (editMode && selectedUser) {
+        // Editar usuário
+        result = await supabase.auth.admin.updateUserById(selectedUser.id, {
+          email: formData.email,
+          user_metadata: {
+            name: formData.name,
+            company: formData.company,
+            whatsapp: formData.whatsapp,
+            role: formData.role
+          }
+        });
+      } else if (!editMode) {
+        // Criar usuário
+        result = await supabase.auth.admin.createUser({
+          email: formData.email,
+          password: formData.password,
+          user_metadata: {
+            name: formData.name,
+            company: formData.company,
+            whatsapp: formData.whatsapp,
+            role: formData.role
+          }
+        });
       }
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (res.ok) {
-        showSnackbar(editMode ? 'Editado com sucesso.' : 'Criado com sucesso.', 'success');
-        setModalOpen(false);
-        // Atualiza tabela
-        const updated = await fetch('/api/neon-auth/users').then(r => r.json());
-        setUsers(updated.users || []);
-      } else {
-        showSnackbar('Erro ao salvar usuário.', 'error');
-      }
+      if (result.error) throw result.error;
+      setSnackbarMessage(editMode ? "Editado com sucesso." : "Criado com sucesso.");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+      setModalOpen(false);
+      // Atualiza tabela
+      const { data } = await supabase.auth.admin.listUsers();
+      setUsers(data.users || []);
     } catch {
-      showSnackbar('Erro ao salvar usuário.', 'error');
+      setSnackbarMessage("Erro ao salvar usuário.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
     }
   };
 
   const handleToggleStatus = async (user: any) => {
     try {
-      const res = await fetch(`/api/neon-auth/users/${user.id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: user.status === 'Ativo' ? 'Inativo' : 'Ativo' }),
+      const supabase = createClient();
+      // Ativar/desativar usuário
+      const result = await supabase.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...user.user_metadata,
+          status: user.status === 'Ativo' ? 'Inativo' : 'Ativo'
+        }
       });
-      if (res.ok) {
-        showSnackbar('Status alterado.', 'success');
-        const updated = await fetch('/api/neon-auth/users').then(r => r.json());
-        setUsers(updated.users || []);
-      } else {
-        showSnackbar('Erro ao alterar status.', 'error');
-      }
+      if (result.error) throw result.error;
+      setSnackbarMessage("Status alterado.");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+      const { data } = await supabase.auth.admin.listUsers();
+      setUsers(data.users || []);
     } catch {
-      showSnackbar('Erro ao alterar status.', 'error');
+      setSnackbarMessage("Erro ao alterar status.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
     }
   };
 
   const handleDeleteUser = async (user: any) => {
     if (!window.confirm('Deseja realmente excluir este usuário?')) return;
     try {
-      const res = await fetch(`/api/neon-auth/users/${user.id}`, { method: 'DELETE' });
-      if (res.ok) {
-        showSnackbar('Usuário excluído.', 'success');
-        const updated = await fetch('/api/neon-auth/users').then(r => r.json());
-        setUsers(updated.users || []);
-      } else {
-        showSnackbar('Erro ao excluir usuário.', 'error');
-      }
+      const supabase = createClient();
+      const result = await supabase.auth.admin.deleteUser(user.id);
+      if (result.error) throw result.error;
+      setSnackbarMessage("Usuário excluído.");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+      const { data } = await supabase.auth.admin.listUsers();
+      setUsers(data.users || []);
     } catch {
-      showSnackbar('Erro ao excluir usuário.', 'error');
+      setSnackbarMessage("Erro ao excluir usuário.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
     }
+  };
+
+  // Removido: funções duplicadas e não utilizadas (selectedUser, formData, handleOpenModal, handleCloseModal, handleFormChange, tableColumns, tableData, handleSaveUser, handleToggleStatus, handleDeleteUser, showToast) do final do arquivo
+  const handleOpenModal = (user?: any) => {
+    if (user) {
+      setEditMode(true);
+      setSelectedUser(user);
+      setFormData({ ...user });
+    } else {
+      setEditMode(false);
+      setSelectedUser(null);
+      setFormData({});
+    }
+    setModalOpen(true);
+  };
+
+  // Função para fechar o modal de usuário
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setEditMode(false);
+    setSelectedUser(null);
+    setFormData({});
+  };
+
+  // Função para atualizar os dados do formulário
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   // Definição das colunas para o DataGrid
@@ -216,11 +247,29 @@ export default function SuperadminUsersPage() {
         rows={tableData}
         columns={tableColumns}
         autoHeight
-        initialState={{
-          pagination: { paginationModel: { pageSize: 10, page: 0 } }
+        sx={{
+          bgcolor: '#18181b',
+          color: '#fff',
+          borderRadius: 3,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+          '& .MuiDataGrid-row:hover': {
+            backgroundColor: '#23232b',
+          },
+          '& .MuiDataGrid-row.Mui-selected': {
+            backgroundColor: '#00bcd4',
+            color: '#18181b',
+          },
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: '#23232b',
+            color: '#bdbdbd',
+            fontWeight: 'bold',
+            fontSize: '1rem',
+          },
+          '& .MuiDataGrid-cell': {
+            borderBottom: '1px solid #23232b',
+          },
         }}
-        sx={{ bgcolor: '#18181b', color: '#fff', borderRadius: 3 }}
-        pageSizeOptions={[10, 20, 50]}
+        initialState={{ pagination: { pageSize: 10, page: 0 } }}
         pagination
       />
       <Dialog open={modalOpen} onClose={handleCloseModal}>
@@ -272,6 +321,18 @@ export default function SuperadminUsersPage() {
               onChange={handleFormChange}
             />
           )}
+          <TextField
+            margin="dense"
+            label="Role"
+            name="role"
+            select
+            fullWidth
+            value={formData.role || "ADMIN"}
+            onChange={handleFormChange}
+          >
+            <MenuItem value="SUPERADMIN">SUPERADMIN</MenuItem>
+            <MenuItem value="ADMIN">ADMIN</MenuItem>
+          </TextField>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseModal}>Cancelar</Button>
@@ -287,6 +348,7 @@ export default function SuperadminUsersPage() {
         message={snackbarMessage}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       />
+      <ToastContainer />
     </>
   );
 }

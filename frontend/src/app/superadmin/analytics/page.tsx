@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useState } from 'react';
 import {
-  Card, Typography, Button, List, ListItem, ListItemText, Select, MenuItem, TextField, Box
+  Card, Typography, Button, List, ListItem, ListItemText, Select, TextField, Box
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
+import { formatDateToSaoPaulo } from '../../../utils/formatDate';
+import { LineChart } from '@mui/x-charts';
 
 const defaultMetrics = {
   totalRequests: 0,
@@ -15,11 +17,27 @@ const defaultMetrics = {
   avgTime: 0,
   errorRate: 0,
   uptime: 100,
+  requestsData: Array(30).fill(0),
+  visitorsData: Array(30).fill(0),
 };
+
+interface AccessLog {
+  accessed_at?: string;
+  client_ip?: string;
+  method?: string;
+  status_code?: number;
+  cache_status?: string;
+  episode_info?: any;
+  path?: string;
+  user_agent?: string;
+  country?: string;
+  city?: string;
+  isp?: string;
+}
 
 export default function SuperadminAnalyticsPage() {
   const [metrics, setMetrics] = useState(defaultMetrics);
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState<AccessLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('24h');
   const [httpStatus, setHttpStatus] = useState('Todos');
@@ -48,76 +66,46 @@ export default function SuperadminAnalyticsPage() {
     <Box sx={{ background: '#181818', color: '#fff', minHeight: '100vh', p: 3 }}>
       <Typography variant="h4" sx={{ mb: 1 }}>Analytics do Domínio</Typography>
       <Typography variant="subtitle1" sx={{ mb: 2 }}>DNS 1 Teste Richard</Typography>
-      <Typography variant="caption" sx={{ mb: 2 }}>Última atualização: 03/10, 20:20</Typography>
+      <Typography variant="caption" sx={{ mb: 2 }}>Última atualização: {logs.length > 0 && logs[0].accessed_at ? formatDateToSaoPaulo(logs[0].accessed_at) : '-'}</Typography>
       <Button variant="contained" sx={{ float: 'right', mb: 2 }}>Atualizar</Button>
       <Grid container spacing={2} sx={{ mb: 2 }}>
         {/* Cards de métricas principais */}
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ p: 2, bgcolor: '#222' }}>
             <Typography variant="subtitle2">Total de Requisições</Typography>
             <Typography variant="h6">{metrics.totalRequests}</Typography>
             <Typography variant="caption">nas últimas 24 horas</Typography>
           </Card>
         </Grid>
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ p: 2, bgcolor: '#222' }}>
             <Typography variant="subtitle2">Visitantes Únicos</Typography>
             <Typography variant="h6">{metrics.uniqueVisitors}</Typography>
             <Typography variant="caption">IPs únicos</Typography>
           </Card>
         </Grid>
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ p: 2, bgcolor: '#222' }}>
             <Typography variant="subtitle2">Banda Transferida</Typography>
             <Typography variant="h6">{formatBytes(metrics.bandwidth)}</Typography>
             <Typography variant="caption">nas últimas 24 horas</Typography>
           </Card>
         </Grid>
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ p: 2, bgcolor: '#222' }}>
             <Typography variant="subtitle2">Status de Saúde</Typography>
             <Typography variant="h6">{metrics.healthStatus}</Typography>
             <Typography variant="caption">{metrics.healthLatency}ms resp. médio</Typography>
           </Card>
         </Grid>
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ p: 2, bgcolor: '#222' }}>
             <Typography variant="subtitle2">Erros</Typography>
             <Typography variant="h6">{metrics.errorRate}%</Typography>
             <Typography variant="caption">Erros nas últimas 24h</Typography>
           </Card>
         </Grid>
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ p: 2, bgcolor: '#222' }}>
             <Typography variant="subtitle2">Uptime</Typography>
             <Typography variant="h6">{metrics.uptime}%</Typography>
@@ -125,49 +113,55 @@ export default function SuperadminAnalyticsPage() {
           </Card>
         </Grid>
       </Grid>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={6}>
+          <Card sx={{ p: 3, backgroundColor: '#18181b', color: '#fff', borderRadius: '18px', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
+            <Typography variant="subtitle2" sx={{ color: '#bdbdbd', mb: 2 }}>Total de Requisições - Últimos 30 dias</Typography>
+            <LineChart
+              height={220}
+              series={[{ data: metrics.requestsData, label: 'Requisições', color: '#00bcd4' }]}
+              xAxis={[{ scaleType: 'point', data: metrics.requestsData?.map((_, i) => `${i + 1}`) ?? [] }]}
+              sx={{ background: '#18181b', borderRadius: '18px', p: 2 }}
+              grid={{ vertical: true, horizontal: true }}
+            />
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Card sx={{ p: 3, backgroundColor: '#18181b', color: '#fff', borderRadius: '18px', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
+            <Typography variant="subtitle2" sx={{ color: '#bdbdbd', mb: 2 }}>Visitantes Únicos - Últimos 30 dias</Typography>
+            <LineChart
+              height={220}
+              series={[{ data: metrics.visitorsData, label: 'Visitantes', color: '#4caf50' }]}
+              xAxis={[{ scaleType: 'point', data: metrics.visitorsData?.map((_, i) => `${i + 1}`) ?? [] }]}
+              sx={{ background: '#18181b', borderRadius: '18px', p: 2 }}
+              grid={{ vertical: true, horizontal: true }}
+            />
+          </Card>
+        </Grid>
+      </Grid>
       <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ p: 2, bgcolor: '#222' }}>
             <Typography variant="subtitle2">Taxa de Cache</Typography>
             <Typography variant="h6">{metrics.cacheRate}%</Typography>
             <Typography variant="caption">Eficiência do cache</Typography>
           </Card>
         </Grid>
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ p: 2, bgcolor: '#222' }}>
             <Typography variant="subtitle2">Tempo Médio</Typography>
             <Typography variant="h6">{metrics.avgTime}ms</Typography>
             <Typography variant="caption">Tempo de resposta</Typography>
           </Card>
         </Grid>
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ p: 2, bgcolor: '#222' }}>
             <Typography variant="subtitle2">Taxa de Erro</Typography>
             <Typography variant="h6">{metrics.errorRate}%</Typography>
             <Typography variant="caption">Erros nas últimas 24h</Typography>
           </Card>
         </Grid>
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3
-          }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ p: 2, bgcolor: '#222' }}>
             <Typography variant="subtitle2">Uptime</Typography>
             <Typography variant="h6">{metrics.uptime}%</Typography>
@@ -179,13 +173,13 @@ export default function SuperadminAnalyticsPage() {
       <Card sx={{ p: 2, bgcolor: '#222', mb: 2 }}>
         <Typography variant="h6">Filtros de Logs</Typography>
         <Grid container spacing={2} alignItems="center">
-          <Grid size={12}>
+          <Grid item xs={12}>
             <Select value={period} onChange={e => setPeriod(e.target.value)}>
               <MenuItem value="24h">Últimas 24 horas</MenuItem>
               <MenuItem value="7d">Últimos 7 dias</MenuItem>
             </Select>
           </Grid>
-          <Grid size={12}>
+          <Grid item xs={12}>
             <Select value={httpStatus} onChange={e => setHttpStatus(e.target.value)}>
               <MenuItem value="Todos">Todos</MenuItem>
               <MenuItem value="200">200</MenuItem>
@@ -193,7 +187,7 @@ export default function SuperadminAnalyticsPage() {
               <MenuItem value="500">500</MenuItem>
             </Select>
           </Grid>
-          <Grid size={12}>
+          <Grid item xs={12}>
             <TextField value={search} onChange={e => setSearch(e.target.value)} placeholder="IP, URL ou User Agent..." size="small" sx={{ bgcolor: '#333', color: '#fff' }} />
           </Grid>
         </Grid>
@@ -204,7 +198,12 @@ export default function SuperadminAnalyticsPage() {
         {loading ? <Typography>Carregando...</Typography> : logs.length === 0 ? <Typography>Não há registros de acesso para os filtros selecionados.</Typography> : (
           <List>
             {logs.map((log: any, idx: number) => (
-              <ListItem key={idx}><ListItemText primary={log.info} secondary={log.date} /></ListItem>
+              <ListItem key={idx}>
+                <ListItemText
+                  primary={`IP: ${log.client_ip || '-'} | Método: ${log.method || '-'} | Status: ${log.status_code || '-'} | Proxy/Redirect: ${log.cache_status || '-'} | Episódio: ${log.episode_info ? JSON.stringify(log.episode_info) : '-'} | Caminho: ${log.path || '-'} | User-Agent: ${log.user_agent || '-'}`}
+                  secondary={`Acessado em: ${log.accessed_at ? formatDateToSaoPaulo(log.accessed_at) : '-'} | País: ${log.country || '-'} | Cidade: ${log.city || '-'} | ISP: ${log.isp || '-'}`}
+                />
+              </ListItem>
             ))}
           </List>
         )}
@@ -212,3 +211,4 @@ export default function SuperadminAnalyticsPage() {
     </Box>
   );
 }
+import { MenuItem } from '@mui/material';

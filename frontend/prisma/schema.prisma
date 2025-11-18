@@ -1,23 +1,11 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id               Int              @id @default(autoincrement())
-  email            String           @unique
-  name             String?
-  password         String
-  role             String?
-  twoFactorEnabled Boolean          @default(false)
-  twoFactorSecret  String?
-  payments         Payment[]
-  pixTransactions  PixTransaction[]
-  profiles         Profile[]
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Profile {
@@ -25,7 +13,7 @@ model Profile {
   userId    Int
   bio       String?
   avatarUrl String?
-  user      User    @relation(fields: [userId], references: [id])
+  User      User    @relation(fields: [userId], references: [id])
 }
 
 model Configuration {
@@ -35,9 +23,16 @@ model Configuration {
 }
 
 model Domain {
-  id     Int     @id @default(autoincrement())
-  name   String  @unique
-  status String?
+  id            Int       @id @default(autoincrement())
+  name          String    @unique
+  status        String?
+  expiration    DateTime?
+  streamBaseUrl String?
+  targetUrl     String?
+  type          String?
+  url           String?
+  userId        Int
+  User          User      @relation(fields: [userId], references: [id])
 }
 
 model GeneralConfig {
@@ -53,9 +48,9 @@ model SuperadminProfile {
 }
 
 model Plan {
-  id       Int    @id @default(autoincrement())
-  name     String
-  price    Float
+  id    Int    @id @default(autoincrement())
+  name  String
+  price Float
 }
 
 model Payment {
@@ -63,7 +58,7 @@ model Payment {
   amount Float
   status String
   userId Int
-  user   User   @relation(fields: [userId], references: [id])
+  User   User   @relation(fields: [userId], references: [id])
 }
 
 model PixTransaction {
@@ -71,7 +66,7 @@ model PixTransaction {
   amount Float
   status String
   userId Int
-  user   User   @relation(fields: [userId], references: [id])
+  User   User   @relation(fields: [userId], references: [id])
 }
 
 model AccessLog {
@@ -137,12 +132,17 @@ model StreamingProxy {
   createdAt DateTime @default(now())
 }
 
-model NeonAuthUserSync {
-  id         String    @id
-  name       String?
-  email      String    @unique
-  created_at DateTime  @default(now())
-  updated_at DateTime
-  deleted_at DateTime?
-  raw_json   Json?
+model User {
+  id               Int              @id @default(autoincrement())
+  userId           String?          @unique // UUID do Supabase Auth
+  email            String           @unique
+  name             String?
+  password         String
+  role             String?
+  twoFactorEnabled Boolean          @default(false)
+  twoFactorSecret  String?
+  Domain           Domain[]
+  Payment          Payment[]
+  PixTransaction   PixTransaction[]
+  Profile          Profile[]
 }

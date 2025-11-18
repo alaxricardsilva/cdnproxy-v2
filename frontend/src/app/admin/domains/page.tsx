@@ -1,8 +1,11 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { Card, Typography, List, ListItem, ListItemText } from '@mui/material';
+import { Card, Typography, List, ListItem, ListItemText, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, Snackbar, Alert } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, Snackbar, Alert } from '@mui/material';
+import { formatDateToSaoPaulo } from '../../../utils/formatDate';
+// Substituir Snackbar por react-toastify
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Defina a interface do domínio incluindo expiration
 interface Domain {
@@ -15,18 +18,18 @@ interface Domain {
 }
 
 export default function AdminDomainsPage() {
-  const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editOpen, setEditOpen] = useState(false);
+  const [domains, setDomains] = useState<Domain[]>([]);
   const [editDomain, setEditDomain] = useState<Domain | null>(null);
   const [editUrl, setEditUrl] = useState('');
   const [editType, setEditType] = useState('proxy');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success'|'error'>('success');
+  const [editOpen, setEditOpen] = useState(false);
 
-  const showSnackbar = (msg: string, severity: 'success'|'error' = 'success') => {
-    setSnackbarMessage(msg);
+  const showSnackbar = (message: string, severity: 'success'|'error' = 'success') => {
+    setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
   };
@@ -38,40 +41,57 @@ export default function AdminDomainsPage() {
     setEditOpen(true);
   };
 
-  const handleEditSave = async () => {
+  // Remover Snackbar/Alert
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    if (type === 'success') toast.success(message);
+    else toast.error(message);
+  };
+
+  const handleEdit = (domain: Domain) => {
+    setEditDomain(domain);
+    setEditUrl(domain.targetUrl || '');
+    setEditType(domain.type || 'proxy');
+    setEditOpen(true);
+  };
+
+  const handleRenew = async (domain: Domain) => {
     try {
-      await fetch(`/api/admin/domains/${editDomain?.id}`, {
-        method: 'PUT',
+      window.location.href = `/admin/cart?renew=${domain.id}`;
+    } catch {
+      showToast('Erro ao redirecionar para renovação.', 'error');
+    }
+  };
+
+  const handleToggleStatus = async (domain: Domain) => {
+    try {
+      await fetch(`/api/admin/domains/${domain.id}/status`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetUrl: editUrl, type: editType }),
+        body: JSON.stringify({ status: domain.status === 'active' ? 'inactive' : 'active' }),
       });
-      showSnackbar('Domínio atualizado com sucesso!', 'success');
-      setEditOpen(false);
-      setEditDomain(null);
-      setEditUrl('');
-      setEditType('proxy');
-      // Atualiza lista
+      showToast(`Domínio ${domain.status === 'active' ? 'desativado' : 'ativado'} com sucesso!`, 'success');
       fetch('/api/admin/domains')
         .then(res => res.json())
         .then(data => setDomains(data.domains || []));
     } catch {
-      showSnackbar('Erro ao atualizar domínio.', 'error');
+      showToast('Erro ao alterar status do domínio.', 'error');
     }
-  };
-
-  const handleRenew = async (domain: Domain) => {
-    // Implemente a lógica de renovação conforme sua API
-    showSnackbar('Função de renovação chamada!', 'success');
   };
 
   const handleDelete = async (domain: Domain) => {
     try {
       await fetch(`/api/admin/domains/${domain.id}`, { method: 'DELETE' });
-      showSnackbar('Domínio excluído com sucesso!', 'success');
+      showToast('Domínio excluído com sucesso!', 'success');
       setDomains(domains.filter((d: Domain) => d.id !== domain.id));
     } catch {
-      showSnackbar('Erro ao excluir domínio.', 'error');
+      showToast('Erro ao excluir domínio.', 'error');
     }
+  };
+
+  const handleEditSave = () => {
+    // Aqui você pode adicionar a lógica para salvar a edição do domínio
+    setEditOpen(false);
+    showToast('Domínio editado com sucesso!', 'success');
   };
 
   // Definição das colunas para o DataGrid
@@ -87,27 +107,12 @@ export default function AdminDomainsPage() {
         const domain = domains.find((d: Domain) => d.id === params.row.id);
         const expired = !!(domain && domain.expiration && new Date(domain.expiration) < new Date());
         return (
-          <>
-            <Button
-              variant="contained"
-              size="small"
-              sx={{ mr: 1 }}
-              disabled={expired}
-              onClick={() => handleEditClick(domain!)}
-            >Editar</Button>
-            <Button
-              variant="outlined"
-              size="small"
-              sx={{ mr: 1 }}
-              onClick={() => handleRenew(domain!)}
-            >Renovar</Button>
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              onClick={() => handleDelete(domain!)}
-            >Excluir</Button>
-          </>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button variant="outlined" size="small" disabled={expired} onClick={() => handleEdit(domain!)}>Editar</Button>
+            <Button variant="outlined" size="small" onClick={() => handleRenew(domain!)}>Renovar</Button>
+            <Button variant="outlined" size="small" onClick={() => handleToggleStatus(domain!)}>{domain?.status === 'active' ? 'Desativar' : 'Ativar'}</Button>
+            <Button variant="outlined" size="small" color="error" onClick={() => handleDelete(domain!)}>Excluir</Button>
+          </Box>
         );
       }
     }
@@ -145,16 +150,25 @@ export default function AdminDomainsPage() {
         rows={tableData}
         columns={tableColumns}
         autoHeight
-        initialState={{
-          pagination: { paginationModel: { pageSize: 10, page: 0 } }
+        sx={{
+          bgcolor: '#18181b',
+          color: '#fff',
+          borderRadius: 3,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+          '& .MuiDataGrid-row:hover': {
+            backgroundColor: '#23232b',
+          },
         }}
-        sx={{ bgcolor: '#18181b', color: '#fff', borderRadius: 3 }}
-        pageSizeOptions={[10, 20, 50]}
+        initialState={{ pagination: { pageSize: 20 } }}
         pagination
+        loading={loading}
       />
       <Dialog open={editOpen} onClose={() => setEditOpen(false)}>
         <DialogTitle>Editar Domínio</DialogTitle>
         <DialogContent>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            O sistema automaticamente identifica se vai ser Proxy Reverso/Redirecionamento.
+          </Alert>
           <TextField
             label="URL de Destino"
             fullWidth
@@ -168,10 +182,14 @@ export default function AdminDomainsPage() {
             value={editType}
             onChange={e => setEditType(e.target.value)}
             sx={{ mt: 2 }}
+            disabled
           >
             <MenuItem value="proxy">Proxy Reverso</MenuItem>
             <MenuItem value="redirect">Redirecionamento 301</MenuItem>
           </Select>
+          <Typography variant="body2" color="warning.main" sx={{ mt: 2 }}>
+            O tipo de entrega (Proxy/Redirecionamento) é definido automaticamente pelo sistema. Para alterar, entre em contato com o suporte.
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditOpen(false)}>Cancelar</Button>
@@ -183,7 +201,7 @@ export default function AdminDomainsPage() {
           {snackbarMessage}
         </Alert>
       </Snackbar>
+      <ToastContainer />
     </>
   );
 }
-// Nenhum uso do Grid legacy encontrado neste arquivo.

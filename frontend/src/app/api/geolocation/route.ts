@@ -1,12 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
+import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
+import jwksClient from 'jwks-rsa';
+
+const prisma = new PrismaClient();
+
+const JWKS_URI = process.env.JWT_JWKS_URL ?? '';
+const jwtAlgorithm = (process.env.JWT_ALGORITHM || 'RS256');
+const client = jwksClient({ jwksUri: JWKS_URI });
+
+async function verifyJWT(token: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, getKey, { algorithms: ['RS256'] }, (err, decoded) => {
+      if (err) return reject(err);
+      resolve(decoded);
+    });
+  });
+}
+
+function getKey(header: any, callback: any) {
+  client.getSigningKey(header.kid, function (err, key) {
+    if (err || !key) {
+      callback(err || new Error('Signing key not found'));
+    } else {
+      const signingKey = key?.getPublicKey?.();
+      if (!signingKey) {
+        callback(new Error('Public key not found'));
+      } else {
+        callback(null, signingKey);
+      }
+    }
+  });
+}
+
+async function getUserFromJWT(req: NextRequest) {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return null;
+  const token = authHeader.replace('Bearer ', '');
+  try {
+    const decoded = await verifyJWT(token);
+    return decoded;
+  } catch (err) {
+    return null;
+  }
+}
 
 // Device detection logic (adapted from DeviceDetectionService)
 function detectDevice(userAgent: string) {
   if (!userAgent) return { device: 'Unknown', os: 'Unknown', browser: 'Unknown', isBot: false, isApp: false, isBrowser: false, isStreamingDevice: false };
-  let device = /mobile/i.test(userAgent) ? 'Mobile' : /tablet/i.test(userAgent) ? 'Tablet' : 'Desktop';
-  let os = /windows/i.test(userAgent) ? 'Windows' : /android/i.test(userAgent) ? 'Android' : /linux/i.test(userAgent) ? 'Linux' : /iphone|ipad|ipod/i.test(userAgent) ? 'iOS' : /mac os/i.test(userAgent) ? 'MacOS' : 'Unknown';
-  let browser = /chrome/i.test(userAgent) ? 'Chrome' : /firefox/i.test(userAgent) ? 'Firefox' : /safari/i.test(userAgent) ? 'Safari' : /edge/i.test(userAgent) ? 'Edge' : /msie|trident/i.test(userAgent) ? 'IE' : 'Unknown';
+  const device = /mobile/i.test(userAgent) ? 'Mobile' : /tablet/i.test(userAgent) ? 'Tablet' : 'Desktop';
+  const os = /windows/i.test(userAgent) ? 'Windows' : /android/i.test(userAgent) ? 'Android' : /linux/i.test(userAgent) ? 'Linux' : /iphone|ipad|ipod/i.test(userAgent) ? 'iOS' : /mac os/i.test(userAgent) ? 'MacOS' : 'Unknown';
+  const browser = /chrome/i.test(userAgent) ? 'Chrome' : /firefox/i.test(userAgent) ? 'Firefox' : /safari/i.test(userAgent) ? 'Safari' : /edge/i.test(userAgent) ? 'Edge' : /msie|trident/i.test(userAgent) ? 'IE' : 'Unknown';
   const isBot = /bot|spider|crawler/i.test(userAgent);
   const isBrowser = /chrome|firefox|safari|edge|msie|trident/i.test(userAgent);
   const isStreamingDevice = /smarttv|roku|firetv|chromecast|appletv|androidtv/i.test(userAgent);
@@ -15,13 +60,13 @@ function detectDevice(userAgent: string) {
 }
 
 // Simple in-memory log (adapted from LogsService)
-const logs: any[] = [];
-function registerAccessLog(logData: any) {
+const logs: Array<Record<string, unknown>> = [];
+function registerAccessLog(logData: Record<string, unknown>) {
   logs.push({ ...logData, timestamp: Date.now() });
 }
 
 // Cache simples em memória para geolocalização por IP
-const geoCache: Record<string, { data: any, timestamp: number }> = {};
+const geoCache: Record<string, { data: Record<string, unknown>, timestamp: number }> = {};
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 // APIs gratuitas de fallback

@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { Card, Typography, Box, Button } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function formatSize(bytes: number) {
   if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
@@ -11,7 +13,7 @@ function formatSize(bytes: number) {
 }
 
 export default function SuperadminDatabasePage() {
-  const [dbInfo, setDbInfo] = useState<any>(null);
+  const [dbInfo, setDbInfo] = useState<{ tables?: Array<{ name: string; size: number; protected: boolean }>; totalSize?: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [cleaningTable, setCleaningTable] = useState<string | null>(null);
 
@@ -81,7 +83,7 @@ export default function SuperadminDatabasePage() {
         <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
           <Card sx={{ flex: 1, minWidth: 220, p: 3, bgcolor: '#18181b', color: '#fff' }}>
             <Typography variant="h6">Tamanho Total</Typography>
-            <Typography variant="h4">{formatSize(dbInfo.totalSize)}</Typography>
+            <Typography variant="h4">{formatSize(typeof dbInfo.totalSize === 'number' ? dbInfo.totalSize : 0)}</Typography>
           </Card>
           <Card sx={{ flex: 1, minWidth: 220, p: 3, bgcolor: '#18181b', color: '#fff' }}>
             <Typography variant="h6">Total de Tabelas</Typography>
@@ -96,16 +98,39 @@ export default function SuperadminDatabasePage() {
           rows={tableData}
           columns={tableColumns}
           autoHeight
-          initialState={{
-            pagination: { paginationModel: { pageSize: 20, page: 0 } }
+          sx={{
+            bgcolor: '#18181b',
+            color: '#fff',
+            borderRadius: 3,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: '#23232b',
+            },
+            '& .MuiDataGrid-row.Mui-selected': {
+              backgroundColor: '#00bcd4',
+              color: '#18181b',
+            },
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: '#23232b',
+              color: '#bdbdbd',
+              fontWeight: 'bold',
+              fontSize: '1rem',
+            },
+            '& .MuiDataGrid-cell': {
+              borderBottom: '1px solid #23232b',
+            },
           }}
-          sx={{ bgcolor: '#18181b', color: '#fff', borderRadius: 3 }}
-          pageSizeOptions={[20, 50, 100]}
-          pagination
-          loading={loading}
         />
       </Box>
     </Box>
   );
 }
-// Nenhum uso do Grid legacy encontrado neste arquivo.
+const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  if (type === 'success') toast.success(message);
+  else toast.error(message);
+};
+
+// Removido: função handleDelete, tipo Database e array columns duplicados do final do arquivo
+// ... existing code ...
+// Removido: função handleDelete, tipo Database e array columns duplicados do final do arquivo
+// ... existing code ...

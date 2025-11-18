@@ -1,8 +1,20 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { Card, Typography } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid } from '@mui/x-data-grid';
 import { List, ListItem, ListItemText } from '@mui/material';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+interface Payment {
+  id: string;
+  userName?: string;
+  user?: string;
+  amount: number;
+  status?: string;
+  createdAt?: string;
+  // Adicione outros campos conforme necessário
+}
 
 export default function AdminPaymentsPage() {
   const [payments, setPayments] = useState([]);
@@ -28,7 +40,7 @@ export default function AdminPaymentsPage() {
   ];
 
   // Adaptação dos dados para o DataGrid
-  const tableData = payments.map((payment: any) => ({
+  const tableData = payments.map((payment: Payment) => ({
     id: payment.id,
     user: payment.userName || payment.user || '-',
     amount: payment.amount,
@@ -60,15 +72,20 @@ export default function AdminPaymentsPage() {
         rows={tableData}
         columns={tableColumns}
         autoHeight
-        initialState={{
-          pagination: { paginationModel: { pageSize: 10, page: 0 } }
+        sx={{
+          bgcolor: '#18181b',
+          color: '#fff',
+          borderRadius: 3,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+          '& .MuiDataGrid-row:hover': {
+            backgroundColor: '#23232b',
+          },
         }}
-        sx={{ bgcolor: '#18181b', color: '#fff', borderRadius: 3 }}
-        pageSizeOptions={[10, 20, 50]}
+        initialState={{ pagination: { pageSize: 20 } }}
         pagination
+        loading={loading}
       />
+      <ToastContainer />
     </>
   );
 }
-
-// Nenhum uso do Grid legacy encontrado neste arquivo.

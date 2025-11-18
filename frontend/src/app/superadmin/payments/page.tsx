@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { Card, Typography, Box, Button, Snackbar, Alert, Tabs, Tab, Grid, TextField, CircularProgress } from '@mui/material';
+import { Card, Typography, Box, Button, Snackbar, Alert, Tabs, Tab, Grid, TextField, CircularProgress, FormControlLabel, Checkbox } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 
 export default function SuperadminPaymentsPage() {
@@ -76,7 +76,7 @@ export default function SuperadminPaymentsPage() {
   }));
 
   // Handlers PIX
-  const handlePixChange = (field: string, value: string) => {
+  const handlePixChange = (field: string, value: string | boolean) => {
     setPixConfig((prev: any) => ({ ...prev, [field]: value }));
   };
   const handlePixSave = async () => {
@@ -100,7 +100,7 @@ export default function SuperadminPaymentsPage() {
   };
 
   // Handlers Mercado Pago
-  const handleMpChange = (field: string, value: string) => {
+  const handleMpChange = (field: string, value: string | boolean) => {
     setMpConfig((prev: any) => ({ ...prev, [field]: value }));
   };
   const handleMpSave = async () => {
@@ -125,11 +125,7 @@ export default function SuperadminPaymentsPage() {
 
   return (
     <Grid container justifyContent="center" alignItems="flex-start" style={{ minHeight: "80vh" }}>
-      <Grid
-        size={{
-          xs: 12,
-          md: 8
-        }}>
+      <Grid xs={12} md={8}>
         <Card elevation={6} style={{ borderRadius: 16, background: "#181A20", color: "#fff", padding: 32, marginTop: 32 }}>
           <Typography variant="h5" gutterBottom>
             Pagamentos (Superadmin)
@@ -150,9 +146,29 @@ export default function SuperadminPaymentsPage() {
                     rows={tableData}
                     columns={tableColumns}
                     autoHeight
-                    initialState={{ pagination: { paginationModel: { pageSize: 20, page: 0 } } }}
-                    sx={{ bgcolor: '#18181b', color: '#fff', borderRadius: 3 }}
-                    pageSizeOptions={[20, 50, 100]}
+                    sx={{
+                      bgcolor: '#18181b',
+                      color: '#fff',
+                      borderRadius: 3,
+                      boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+                      '& .MuiDataGrid-row:hover': {
+                        backgroundColor: '#23232b',
+                      },
+                      '& .MuiDataGrid-row.Mui-selected': {
+                        backgroundColor: '#00bcd4',
+                        color: '#18181b',
+                      },
+                      '& .MuiDataGrid-columnHeaders': {
+                        backgroundColor: '#23232b',
+                        color: '#bdbdbd',
+                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                      },
+                      '& .MuiDataGrid-cell': {
+                        borderBottom: '1px solid #23232b',
+                      },
+                    }}
+                    initialState={{ pagination: { pageSize: 20 } }}
                     pagination
                     loading={loading}
                   />
@@ -163,17 +179,21 @@ export default function SuperadminPaymentsPage() {
           {tab === 1 && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="h6" gutterBottom>Configuração PIX</Typography>
+              <FormControlLabel
+                control={<Checkbox checked={pixConfig?.enabled ?? false} onChange={e => handlePixChange('enabled', e.target.checked)} />}
+                label="Ativar PIX manual"
+                sx={{ mb: 2 }}
+              />
               {pixLoading ? (
                 <CircularProgress />
               ) : pixConfig ? (
                 <Grid container spacing={2}>
-                  {Object.entries(pixConfig).map(([key, value]) => (
+                  {Object.entries(pixConfig).filter(([key]) => key !== 'enabled').map(([key, value]) => (
                     <Grid
                       key={key}
-                      size={{
-                        xs: 12,
-                        md: 6
-                      }}>
+                      xs={12}
+                      md={6}
+                    >
                       <TextField
                         label={key}
                         value={value}
@@ -185,7 +205,7 @@ export default function SuperadminPaymentsPage() {
                       />
                     </Grid>
                   ))}
-                  <Grid size={12}>
+                  <Grid xs={12}>
                     <Button variant="contained" color="success" onClick={handlePixSave} disabled={pixSaving}>
                       {pixSaving ? <CircularProgress size={24} /> : "Salvar PIX"}
                     </Button>
@@ -206,10 +226,10 @@ export default function SuperadminPaymentsPage() {
                   {Object.entries(mpConfig).map(([key, value]) => (
                     <Grid
                       key={key}
-                      size={{
-                        xs: 12,
-                        md: 6
-                      }}>
+                      item
+                      xs={12}
+                      md={6}
+                    >
                       <TextField
                         label={key}
                         value={value}
@@ -221,7 +241,35 @@ export default function SuperadminPaymentsPage() {
                       />
                     </Grid>
                   ))}
-                  <Grid size={12}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Token de Integração Mercado Pago"
+                      value={mpConfig?.token || ''}
+                      onChange={e => handleMpChange('token', e.target.value)}
+                      fullWidth
+                      variant="outlined"
+                      InputProps={{ style: { color: "#fff" } }}
+                      InputLabelProps={{ style: { color: "#bbb" } }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>Formas de pagamento disponíveis</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <FormControlLabel
+                        control={<Checkbox checked={mpConfig?.pix ?? false} onChange={e => handleMpChange('pix', e.target.checked)} />}
+                        label="PIX"
+                      />
+                      <FormControlLabel
+                        control={<Checkbox checked={mpConfig?.credit_card ?? false} onChange={e => handleMpChange('credit_card', e.target.checked)} />}
+                        label="Cartão de Crédito/Débito"
+                      />
+                      <FormControlLabel
+                        control={<Checkbox checked={mpConfig?.wallet ?? false} onChange={e => handleMpChange('wallet', e.target.checked)} />}
+                        label="Saldo MercadoPago"
+                      />
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12}>
                     <Button variant="contained" color="success" onClick={handleMpSave} disabled={mpSaving}>
                       {mpSaving ? <CircularProgress size={24} /> : "Salvar Mercado Pago"}
                     </Button>

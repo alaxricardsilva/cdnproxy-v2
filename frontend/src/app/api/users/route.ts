@@ -1,45 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import bcryptjs from 'bcryptjs';
-
-const prisma = new PrismaClient();
+import { createClient } from '../../../../utils/supabase/client';
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get('id');
-  if (id) {
-    const user = await prisma.user.findUnique({ where: { id: Number(id) } });
-    return NextResponse.json(user);
+  console.log('[API] GET /api/users chamado');
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.admin.listUsers();
+    if (error) {
+      console.error('[API] GET /api/users: erro', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    console.log('[API] GET /api/users: usuários encontrados', data.users.length);
+    return NextResponse.json(data.users);
+  } catch (err: any) {
+    console.error('[API] GET /api/users: erro', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
-  const users = await prisma.user.findMany();
-  return NextResponse.json(users);
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const saltRounds = 10;
-  body.password = await bcryptjs.hash(body.password, saltRounds);
-  const user = await prisma.user.create({ data: body });
-  return NextResponse.json(user);
+  try {
+    const supabase = createClient();
+    const body = await req.json();
+    const { email, password, user_metadata } = body;
+    const { data, error } = await supabase.auth.admin.createUser({ email, password, user_metadata });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data.user);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
 
 export async function PUT(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get('id');
-  if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
-  const body = await req.json();
-  if (body.password) {
-    const saltRounds = 10;
-    body.password = await bcryptjs.hash(body.password, saltRounds);
+  try {
+    const supabase = createClient();
+    const body = await req.json();
+    const { id, email, user_metadata } = body;
+    const { data, error } = await supabase.auth.admin.updateUserById(id, { email, user_metadata });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data.user);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
-  const user = await prisma.user.update({ where: { id: Number(id) }, data: body });
-  return NextResponse.json(user);
 }
 
 export async function DELETE(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get('id');
-  if (!id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
-  await prisma.user.delete({ where: { id: Number(id) } });
-  return NextResponse.json({ success: true });
+  try {
+    const supabase = createClient();
+    const body = await req.json();
+    const { id } = body;
+    const { error } = await supabase.auth.admin.deleteUser(id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }

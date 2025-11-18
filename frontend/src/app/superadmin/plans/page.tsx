@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { Card, Typography } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Definição do tipo Plan fora do componente
 interface Plan {
@@ -51,9 +53,21 @@ export default function SuperadminPlansPage() {
           rows={tableData}
           columns={tableColumns}
           autoHeight
-          sx={{ bgcolor: '#18181b', color: '#fff', borderRadius: 3 }}
+          sx={{
+            bgcolor: '#18181b',
+            color: '#fff',
+            borderRadius: 3,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+            '& .MuiDataGrid-row:hover': {
+              backgroundColor: '#23232b',
+            },
+          }}
+          initialState={{ pagination: { pageSize: 20 } }}
+          pagination
+          loading={loading}
         />
       )}
+      <ToastContainer />
     </Card>
   );
 }

@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcryptjs from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { createClient } from '../../../../../utils/supabase/client';
 
 console.log('[API] Inicializando PrismaClient para login...');
 const prisma = new PrismaClient({
@@ -22,24 +24,24 @@ prisma.$on('error', (e) => {
 });
 
 export async function POST(req: NextRequest) {
-  console.log('[API] POST /api/auth/login chamado');
   const { email, password } = await req.json();
   if (!email || !password) {
-    console.warn('[API] Email ou senha não fornecidos');
     return NextResponse.json({ error: 'E-mail e senha são obrigatórios.' }, { status: 400 });
   }
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !user.password) {
-    console.warn('[API] Usuário não encontrado ou senha ausente');
-    return NextResponse.json({ error: 'Usuário ou senha inválidos.' }, { status: 401 });
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    // Retorna o token de acesso e dados do usuário
+    return NextResponse.json({
+      status: 'OK',
+      user: data.user,
+      accessToken: data.session?.access_token,
+      refreshToken: data.session?.refresh_token
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
-  const isPasswordValid = await bcryptjs.compare(password, user.password);
-  if (!isPasswordValid) {
-    console.warn('[API] Senha inválida para o usuário', email);
-    return NextResponse.json({ error: 'Usuário ou senha inválidos.' }, { status: 401 });
-  }
-  // Gerar JWT (exemplo simplificado)
-  // Implemente geração de JWT conforme sua estratégia
-  console.log('[API] Login bem-sucedido para', email);
-  return NextResponse.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } });
 }

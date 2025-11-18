@@ -3,6 +3,10 @@ import { useEffect, useState } from 'react';
 import { Card, Typography, Box } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControlLabel, Checkbox, Select, MenuItem, InputLabel, FormControl, Snackbar, Alert } from '@mui/material';
+import { formatDateToSaoPaulo } from '../../../utils/formatDate';
+// Substituir Snackbar por react-toastify
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function SuperadminDomainsPage() {
   // Estados principais
@@ -12,8 +16,28 @@ export default function SuperadminDomainsPage() {
   const [expiredCount, setExpiredCount] = useState(0);
   const [expiringSoonCount, setExpiringSoonCount] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
-  const [editDomain, setEditDomain] = useState<any>(null);
-  const [form, setForm] = useState({
+  const [editDomain, setEditDomain] = useState<{
+    id?: string;
+    name?: string;
+    domain?: string;
+    destinationUrl?: string;
+    type?: string;
+    userId?: string;
+    expiresAt?: string;
+    displayName?: string;
+    status?: string;
+    user?: { name?: string; email?: string; id?: string };
+  } | null>(null);
+  const [form, setForm] = useState<{
+    name: string;
+    domain: string;
+    destinationUrl: string;
+    isReverseProxy: boolean;
+    isRedirect301: boolean;
+    userId: string;
+    expiresAt: string;
+    expiresHour: string;
+  }>({
     name: '',
     domain: '',
     destinationUrl: '',
@@ -23,14 +47,14 @@ export default function SuperadminDomainsPage() {
     expiresAt: '',
     expiresHour: '23:59',
   });
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<Array<{ id: string; name?: string; email?: string }>>([]);
 
   // Estados do Snackbar
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info'>('success');
 
-  // Função para mostrar snackbar
+  // Removido função showSnackbar fora do escopo do componente
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' = 'success') => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
@@ -38,6 +62,37 @@ export default function SuperadminDomainsPage() {
   };
 
   useEffect(() => {
+    // Disparo automático de notificação para domínios próximos de expirar (SuperAdmin)
+    if (!loading && domains.length > 0) {
+      const now = new Date();
+      domains.forEach((domain: any) => {
+        if (domain.expiresAt) {
+          const expiresDate = new Date(domain.expiresAt);
+          const diffDays = (expiresDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+          if (diffDays <= 7 && diffDays > 0) {
+            toast.info(`O domínio ${domain.name} está prestes a expirar em ${formatDateToSaoPaulo(domain.expiresAt)}.`);
+          }
+        }
+      });
+    }
+  }, [loading, domains]);
+  useEffect(() => {
+    // Disparo automático de notificação para domínios próximos de expirar (SuperAdmin)
+    if (!loading && domains.length > 0) {
+      const now = new Date();
+      domains.forEach((domain: any) => {
+        if (domain.expiration) {
+          const expiresDate = new Date(domain.expiration);
+          const diffDays = (expiresDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+          if (diffDays <= 7 && diffDays > 0) {
+            // Aqui pode-se disparar uma notificação
+          }
+        }
+      });
+    }
+  }, [loading, domains]);
+  useEffect(() => {
+    setLoading(true);
     fetch('/api/domains')
       .then(res => res.json())
       .then(data => {
@@ -154,6 +209,9 @@ export default function SuperadminDomainsPage() {
     });
     fetchDomains();
   };
+  const handleEdit = (domain: any) => {
+    handleOpenDialog(domain);
+  };
   const handleDelete = async (domain: any) => {
     await fetch(`/api/domains/${domain.id}`, { method: 'DELETE' });
     fetchDomains();
@@ -191,15 +249,23 @@ export default function SuperadminDomainsPage() {
         </Box>
       ),
     },
+    {
+      field: 'userName',
+      headerName: 'Usuário',
+      width: 180,
+      renderCell: (params) => (
+        <Typography variant="body2">{params.row.userName || '-'}</Typography>
+      ),
+    },
     { field: 'status', headerName: 'Status', width: 120 },
     { field: 'expiresAt', headerName: 'Expira em', width: 180 },
     {
       field: 'actions',
       headerName: 'Ações',
       width: 260,
-      renderCell: (params) => (
+      renderCell: (params: any) => (
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="outlined" size="small" onClick={() => handleOpenDialog(params.row)}>Editar</Button>
+          <Button variant="outlined" size="small" onClick={() => handleEdit(params.row)}>Editar</Button>
           <Button variant="outlined" size="small" onClick={() => handleRenew(params.row)}>Renovar</Button>
           <Button variant="outlined" size="small" onClick={() => handleToggleStatus(params.row)}>{params.row.status === 'active' ? 'Desativar' : 'Ativar'}</Button>
           <Button variant="outlined" size="small" color="error" onClick={() => handleDelete(params.row)}>Excluir</Button>
@@ -214,8 +280,9 @@ export default function SuperadminDomainsPage() {
     displayName: domain.displayName,
     domain: domain.domain,
     status: domain.status,
-    expiresAt: domain.expiresAt ? new Date(domain.expiresAt).toLocaleDateString() : '-',
+    expiresAt: domain.expiresAt ? formatDateToSaoPaulo(domain.expiresAt) : '-',
     userId: domain.userId,
+    userName: domain.user?.name || '-',
     type: domain.type,
     destinationUrl: domain.destinationUrl,
   }));
@@ -243,11 +310,29 @@ export default function SuperadminDomainsPage() {
         rows={tableData}
         columns={tableColumns}
         autoHeight
-        initialState={{
-          pagination: { paginationModel: { pageSize: 20, page: 0 } }
+        sx={{
+          bgcolor: '#18181b',
+          color: '#fff',
+          borderRadius: 3,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+          '& .MuiDataGrid-row:hover': {
+            backgroundColor: '#23232b',
+          },
+          '& .MuiDataGrid-row.Mui-selected': {
+            backgroundColor: '#00bcd4',
+            color: '#18181b',
+          },
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: '#23232b',
+            color: '#bdbdbd',
+            fontWeight: 'bold',
+            fontSize: '1rem',
+          },
+          '& .MuiDataGrid-cell': {
+            borderBottom: '1px solid #23232b',
+          },
         }}
-        sx={{ bgcolor: '#18181b', color: '#fff', borderRadius: 3 }}
-        pageSizeOptions={[20, 50, 100]}
+        initialState={{ pagination: { pageSize: 20 } }}
         pagination
         loading={loading}
       />
@@ -258,9 +343,12 @@ export default function SuperadminDomainsPage() {
           <TextField label="Domínio" name="domain" value={form.domain} onChange={handleFormChange} fullWidth required />
           <TextField label="URL de Destino" name="destinationUrl" value={form.destinationUrl} onChange={handleFormChange} fullWidth required />
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <FormControlLabel control={<Checkbox checked={form.isReverseProxy} onChange={handleFormChange} name="isReverseProxy" />} label="Proxy Reverso" />
-            <FormControlLabel control={<Checkbox checked={form.isRedirect301} onChange={handleFormChange} name="isRedirect301" />} label="Redirecionamento 301" />
+            <FormControlLabel control={<Checkbox checked={form.isReverseProxy} name="isReverseProxy" disabled />} label="Proxy Reverso" />
+            <FormControlLabel control={<Checkbox checked={form.isRedirect301} name="isRedirect301" disabled />} label="Redirecionamento 301" />
           </Box>
+          <Typography variant="body2" color="warning.main" sx={{ mt: 2 }}>
+            O tipo de entrega (Proxy/Redirecionamento) é definido automaticamente pelo sistema.
+          </Typography>
           <FormControl fullWidth>
             <InputLabel id="user-select-label">Usuário</InputLabel>
             <Select labelId="user-select-label" name="userId" value={form.userId} onChange={handleFormChange} required>
@@ -279,11 +367,7 @@ export default function SuperadminDomainsPage() {
           <Button onClick={handleSubmit} variant="contained" color="primary">{editDomain ? 'Salvar' : 'Criar'}</Button>
         </DialogActions>
       </Dialog>
-      <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)}>
-        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+      <ToastContainer />
     </>
   );
 }

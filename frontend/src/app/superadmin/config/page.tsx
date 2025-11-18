@@ -4,16 +4,21 @@ import { Card, Typography, List, ListItem, ListItemText, Box } from '@mui/materi
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, Snackbar, Alert } from '@mui/material';
 import Grid from '@mui/material/Grid';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function SuperadminConfigPage() {
-  const [config, setConfig] = useState<any>(null);
+  const [config, setConfig] = useState<Record<string, string | number | boolean> | null>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState<any>({});
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success'|'error'>('success');
+  const [form, setForm] = useState<Record<string, string | number | boolean>>({});
 
+  // Definição do DataGrid
+  const tableData = config ? Object.entries(config).map(([key, value]) => ({ id: key, key, value })) : [];
+  const tableColumns: GridColDef[] = [
+    { field: 'key', headerName: 'Chave', flex: 1 },
+    { field: 'value', headerName: 'Valor', flex: 2 },
+  ];
   useEffect(() => {
     fetch('/api/superadmin/config')
       .then(res => res.json())
@@ -25,9 +30,9 @@ export default function SuperadminConfigPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  const handleFormChange = (e: any) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm((prev: any) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSave = async () => {
@@ -38,29 +43,31 @@ export default function SuperadminConfigPage() {
         body: JSON.stringify(form),
       });
       if (res.ok) {
-        setSnackbarMessage('Configuração salva com sucesso.');
-        setSnackbarSeverity('success');
-        setSnackbarOpen(true);
+        toast.success('Configuração salva com sucesso.');
         setEditMode(false);
         const updated = await res.json();
         setConfig(updated);
         setForm(updated);
       } else {
-        setSnackbarMessage('Erro ao salvar configuração.');
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
+        toast.error('Erro ao salvar configuração.');
       }
     } catch {
-      setSnackbarMessage('Erro ao salvar configuração.');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
+      toast.error('Erro ao salvar configuração.');
     }
   };
 
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    if (type === 'success') toast.success(message);
+    else toast.error(message);
+  };
+
+  // Função handleDelete removida
+
   return (
     <Grid container justifyContent="center" alignItems="center" style={{ minHeight: '80vh' }}>
-      <Grid size={{ xs: 12, md: 6 }}>
+      <Grid item xs={12} md={6}>
         <Card style={{ padding: 32, background: '#18181b', color: '#fff', borderRadius: 16 }}>
+          <ToastContainer />
           <Typography variant="h5" gutterBottom>Configurações (Superadmin)</Typography>
           {loading ? (
             <Typography variant="body1">Carregando...</Typography>
@@ -103,14 +110,24 @@ export default function SuperadminConfigPage() {
             <Typography variant="body1">Erro ao carregar configurações.</Typography>
           )}
         </Card>
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={4000}
-          onClose={() => setSnackbarOpen(false)}
-          message={snackbarMessage}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        />
       </Grid>
+      <DataGrid
+        rows={tableData}
+        columns={tableColumns}
+        autoHeight
+        sx={{
+          bgcolor: '#18181b',
+          color: '#fff',
+          borderRadius: 3,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+          '& .MuiDataGrid-row:hover': {
+            backgroundColor: '#23232b',
+          },
+        }}
+        initialState={{ pagination: { pageSize: 20 } }}
+        pagination
+        loading={loading}
+      />
     </Grid>
   );
 }

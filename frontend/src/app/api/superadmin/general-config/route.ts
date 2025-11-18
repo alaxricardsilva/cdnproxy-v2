@@ -1,22 +1,84 @@
 // API Route Next.js para superadmin-general-config
 import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
+import jwksClient from 'jwks-rsa';
+
+const prisma = new PrismaClient();
+
+const JWKS_URI = process.env.JWT_JWKS_URL ?? '';
+const jwtAlgorithm = (process.env.JWT_ALGORITHM || 'RS256');
+const client = jwksClient({ jwksUri: JWKS_URI });
+
+async function verifyJWT(token: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, getKey, { algorithms: ['RS256'] }, (err, decoded) => {
+      if (err) return reject(err);
+      resolve(decoded);
+    });
+  });
+}
+
+function getKey(header: any, callback: any) {
+  client.getSigningKey(header.kid, function (err, key) {
+    if (err || !key) {
+      callback(err || new Error('Signing key not found'));
+    } else {
+      const signingKey = key?.getPublicKey?.();
+      if (!signingKey) {
+        callback(new Error('Public key not found'));
+      } else {
+        callback(null, signingKey);
+      }
+    }
+  });
+}
+
+async function getUserFromJWT(req: NextRequest) {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return null;
+  const token = authHeader.replace('Bearer ', '');
+  try {
+    const decoded = await verifyJWT(token);
+    return decoded;
+  } catch (err) {
+    return null;
+  }
+}
 
 export async function GET(req: NextRequest) {
-  // TODO: lógica de listagem de configs gerais
-  return NextResponse.json({ message: 'GET superadmin-general-config' });
+  const user = await getUserFromJWT(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Listar todas as configs gerais
+  const configs = await prisma.generalConfig.findMany();
+  return NextResponse.json(configs);
 }
 
 export async function POST(req: NextRequest) {
-  // TODO: lógica de criação de config geral
-  return NextResponse.json({ message: 'POST superadmin-general-config' });
+  const user = await getUserFromJWT(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Criar nova config geral
+  const data = await req.json();
+  const config = await prisma.generalConfig.create({ data });
+  return NextResponse.json(config);
 }
 
 export async function PUT(req: NextRequest) {
-  // TODO: lógica de atualização de config geral
-  return NextResponse.json({ message: 'PUT superadmin-general-config' });
+  const user = await getUserFromJWT(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Atualizar config geral
+  const data = await req.json();
+  if (!data.id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
+  const updated = await prisma.generalConfig.update({ where: { id: data.id }, data });
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(req: NextRequest) {
-  // TODO: lógica de remoção de config geral
-  return NextResponse.json({ message: 'DELETE superadmin-general-config' });
+  const user = await getUserFromJWT(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Remover config geral
+  const data = await req.json();
+  if (!data.id) return NextResponse.json({ error: 'ID obrigatório' }, { status: 400 });
+  await prisma.generalConfig.delete({ where: { id: data.id } });
+  return NextResponse.json({ success: true });
 }
