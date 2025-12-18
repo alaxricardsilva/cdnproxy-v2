@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpeza de Cache - Proxy CDN</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .alert {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #e8f5e8;
+            border-color: #4caf50;
+            color: #2e7d32;
+        }
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1976d2;
+        }
+        .steps {
+            background: #fff3e0;
+            border: 1px solid #ff9800;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .steps ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .steps li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Limpeza de Cache do Navegador</h1>
+        
+        <div class="alert">
+            <strong>Problema Detectado:</strong> O navegador está tentando carregar um arquivo JavaScript antigo que não existe mais:
+            <br><code>8058-7e8368202cf79fb3.js</code>
+        </div>
+
+        <div class="steps">
+            <h3>📋 Instruções para Limpar Cache:</h3>
+            <ol>
+                <li><strong>Pressione Ctrl+Shift+R</strong> (ou Cmd+Shift+R no Mac) para recarregar forçando cache</li>
+                <li><strong>Ou abra DevTools (F12)</strong> e clique com botão direito no botão de reload → "Empty Cache and Hard Reload"</li>
+                <li><strong>Ou limpe manualmente:</strong>
+                    <ul>
+                        <li>Chrome: Ctrl+Shift+Delete → Selecione "Cached images and files"</li>
+                        <li>Firefox: Ctrl+Shift+Delete → Selecione "Cache"</li>
+                        <li>Edge: Ctrl+Shift+Delete → Selecione "Cached data and files"</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <button onclick="clearCacheAndReload()">🔄 Limpar Cache e Recarregar</button>
+            <button onclick="goToLogin()">🔐 Ir para Login</button>
+            <button onclick="goToDashboard()">📊 Ir para Dashboard</button>
+        </div>
+
+        <div id="status" class="alert success" style="display: none;">
+            ✅ Cache limpo! Redirecionando...
+        </div>
+
+        <div class="alert">
+            <strong>💡 Dica:</strong> Se o problema persistir, feche completamente o navegador e abra novamente.
+        </div>
+    </div>
+
+    <script>
+        function clearCacheAndReload() {
+            // Força limpeza do cache do service worker se existir
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for(let registration of registrations) {
+                        registration.unregister();
+                    }
+                });
+            }
+            
+            // Limpa localStorage e sessionStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Mostra status
+            document.getElementById('status').style.display = 'block';
+            
+            // Recarrega com cache limpo após 2 segundos
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 2000);
+        }
+
+        function goToLogin() {
+            clearCacheAndReload();
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 1000);
+        }
+
+        function goToDashboard() {
+            clearCacheAndReload();
+            setTimeout(() => {
+                window.location.href = '/superadmin/dashboard';
+            }, 1000);
+        }
+
+        // Auto-limpa cache ao carregar a página
+        window.addEventListener('load', function() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for(let registration of registrations) {
+                        registration.unregister();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

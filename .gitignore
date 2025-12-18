@@ -22,3 +22,11 @@ logs
 .env
 .env.*
 !.env.example
+node_modules
+
+# Secrets and Temp
+ADMIN_TOKEN.txt
+SUPERADMIN_TOKEN.txt
+tmp_go/
+frontend_build.log
+

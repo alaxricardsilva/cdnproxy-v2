@@ -1,0 +1,61 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cdnproxy-backend
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - NITRO_PORT=5001
+      - NITRO_HOST=0.0.0.0
+      - FRONTEND_URL=https://app.cdnproxy.top
+      - BACKEND_URL=https://api.cdnproxy.top
+      - SUPABASE_URL=https://jyconxalcfqvqakrswnb.supabase.co
+      - NEXT_PUBLIC_SUPABASE_URL=https://jyconxalcfqvqakrswnb.supabase.co
+      - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5Y29ueGFsY2ZxdnFha3Jzd25iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg0MzMyMzksImV4cCI6MjA3NDAwOTIzOX0.B9i9S1n9TxkeM3BHtuq1ZWs_25bugb92YkliWmCS7ok
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5Y29ueGFsY2ZxdnFha3Jzd25iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg0MzMyMzksImV4cCI6MjA3NDAwOTIzOX0.B9i9S1n9TxkeM3BHtuq1ZWs_25bugb92YkliWmCS7ok
+      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5Y29ueGFsY2ZxdnFha3Jzd25iIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODQzMzIzOSwiZXhwIjoyMDc0MDA5MjM5fQ.rMpqmffldlqBgV9EhcjudYY0x27-zlNJzpFJTOYnhtY
+      - JWT_SECRET=4FazpPqcN8GhtgZ2PzVhCsAiKni/HW+bHNii9lLEsYj3ZRAsAxVbtzu7tOiQeWYy/jrSRtAHLno06ZnXfXLXfA==
+      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=L4JPcDDbNxKxyK8b
+      - SETUP_TOKEN=setup-token-2024
+      - SMTP_HOST=mail.spacemail.com
+      - SMTP_PORT=465
+      - SMTP_USER=suporte@cdnproxy.top
+      - SMTP_PASS=C7s92ep@
+      - SMTP_FROM=Recuperação de Senha - CDN Proxy <suporte@cdnproxy.top>
+    # Removido o volume que estava causando conflitos
+    restart: unless-stopped
+    networks:
+      - cdnproxy-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    build:
+      context: ./redis
+      dockerfile: Dockerfile
+    container_name: cdnproxy-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - cdnproxy-network
+    command: redis-server --appendonly yes
+
+volumes:
+  redis_data:
+
+networks:
+  cdnproxy-network:
+    driver: bridge

@@ -1,0 +1,27 @@
+# Configuração Docker Hub - CDNProxy
+# Este arquivo contém as configurações padrão para build e push
+
+# Username Docker Hub
+DOCKER_USERNAME="alaxricard"
+
+# Nome das imagens
+BACKEND_IMAGE="cdnproxy-backend"
+REDIS_IMAGE="cdnproxy-redis"
+
+# Tags padrão
+DEFAULT_TAG="latest"
+VERSION_TAG="v2.0.1"
+
+# Plataformas suportadas (separadas por vírgula)
+PLATFORMS="linux/amd64,linux/arm64"
+
+# Registry URL
+REGISTRY_URL="https://hub.docker.com"
+
+# Repositórios completos
+BACKEND_REPO="${DOCKER_USERNAME}/${BACKEND_IMAGE}"
+REDIS_REPO="${DOCKER_USERNAME}/${REDIS_IMAGE}"
+
+# Links públicos
+BACKEND_URL="${REGISTRY_URL}/r/${BACKEND_REPO}"
+REDIS_URL="${REGISTRY_URL}/r/${REDIS_REPO}"

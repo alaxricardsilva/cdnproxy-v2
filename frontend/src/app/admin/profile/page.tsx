@@ -1,366 +1,254 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import { Card, Typography, Grid, TextField, Button, Snackbar, Alert, CircularProgress } from "@mui/material";
-import { useRouter } from "next/navigation";
-import { createClient } from "../../../../utils/supabase/client";
-// Remover importação antiga
-// import { QRCodeCanvas } from "qrcode.react";
-import QRCode from "qrcode";
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, Box, Chip } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import PeopleIcon from '@mui/icons-material/People';
-import SettingsIcon from '@mui/icons-material/Settings';
-import { LineChart } from '@mui/x-charts';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+"use client"
 
-const supabase = createClient();
-interface Profile {
-  id: number;
-  // Adicione outros campos conforme necessário
-}
+import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
+import { toast } from "sonner"
+import { IconShieldLock, IconUser, IconDeviceMobile } from "@tabler/icons-react"
+import { createClient } from "@/lib/supabase"
+import { API_BASE_URL } from "@/lib/api"
 
-interface AdminProfile {
-  id: number;
-  userId: string;
-  bio?: string;
-  avatarUrl?: string;
-}
+export default function ProfilePage() {
+    const [user, setUser] = useState<{ name: string; email: string; role: string; role_id: number } | null>(null)
+    const [name, setName] = useState("")
+    const [loading, setLoading] = useState(true)
+    const [errorMsg, setErrorMsg] = useState("")
+    const [updating, setUpdating] = useState(false)
+    const [mfaEnabled, setMfaEnabled] = useState(false)
 
-const sidebarItems = [
-  { text: 'Home', icon: <HomeIcon /> },
-  { text: 'Analytics', icon: <BarChartIcon /> },
-  { text: 'Clients', icon: <PeopleIcon /> },
-  { text: 'Settings', icon: <SettingsIcon /> },
-];
+    // Password Change State
+    const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+    const [newPassword, setNewPassword] = useState("")
+    const [confirmPassword, setConfirmPassword] = useState("")
 
-interface MFAStatus {
-  enabled: boolean;
-  qr?: string;
-}
+    const supabase = createClient()
 
-function AdminProfile() {
-  const [profile, setProfile] = useState<AdminProfile | null>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [metrics, setMetrics] = useState({
-    users: 0,
-    usersChange: 0,
-    usersData: [],
-    conversions: 0,
-    conversionsChange: 0,
-    conversionsData: [],
-    eventCount: 0,
-    eventCountChange: 0,
-    eventCountData: [],
-    sessions: 0,
-    sessionsChange: 0,
-    sessionsData: [],
-  });
-  const [metricsLoading, setMetricsLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: "success" | "error" }>({ open: false, message: "", severity: "success" });
-  const router = useRouter();
-  const [mfa, setMfa] = useState<MFAStatus | null>(null);
-  const [mfaCode, setMfaCode] = useState("");
-  const [qrLoading, setQrLoading] = useState(false);
-  const [qrError, setQrError] = useState("");
-  const [challengeId, setChallengeId] = useState<string>("");
-  const [factorId, setFactorId] = useState<string>("");
-  const [qrSvg, setQrSvg] = useState<string>("");
+    useEffect(() => {
+        fetchProfile()
+    }, [])
 
-  useEffect(() => {
-    // Buscar métricas reais do backend
-    const jwt = localStorage.getItem("jwt");
-    setMetricsLoading(true);
-    fetch("/api/admin/dashboard-data", {
-      headers: jwt ? { Authorization: `Bearer ${jwt}` } : {}
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro ao carregar métricas");
-        return res.json();
-      })
-      .then((data) => {
-        setMetrics({
-          users: data.users?.total ?? 0,
-          usersChange: data.users?.change ?? 0,
-          usersData: data.users?.series ?? [],
-          conversions: data.conversions?.total ?? 0,
-          conversionsChange: data.conversions?.change ?? 0,
-          conversionsData: data.conversions?.series ?? [],
-          eventCount: data.events?.total ?? 0,
-          eventCountChange: data.events?.change ?? 0,
-          eventCountData: data.events?.series ?? [],
-          sessions: data.sessions?.total ?? 0,
-          sessionsChange: data.sessions?.change ?? 0,
-          sessionsData: data.sessions?.series ?? [],
-        });
-        setMetricsLoading(false);
-      })
-      .catch(() => {
-        setMetricsLoading(false);
-      });
-  }, []);
+    const fetchProfile = async () => {
+        setLoading(true)
+        try {
+            // Get token exactly like other working pages
+            let token = document.cookie
+                .split("; ")
+                .find((row) => row.startsWith("access_token="))
+                ?.split("=")[1]
 
-  useEffect(() => {
-    // Verifica sessão via SuperTokens
-    const jwt = localStorage.getItem("jwt");
-    fetch("/api/auth/session", {
-      headers: jwt ? { Authorization: `Bearer ${jwt}` } : {}
-    })
-      .then(res => {
-        if (!res.ok) throw new Error("Sessão inválida");
-        return res.json();
-      })
-      .then(data => {
-        if (!data.loggedIn) {
-          router.push("/auth/login");
+            if (!token) {
+                // Fallback to supabase session if cookie missing (optional, but let's stick to working pattern first)
+                const { data: { session } } = await supabase.auth.getSession()
+                if (!session) return
+                token = session.access_token
+            }
+
+            // Fetch from Backend API
+            const res = await fetch(`${API_BASE_URL}/api/admin/profile`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+
+            if (res.ok) {
+                const data = await res.json()
+                const roleName = data.role === 1 ? "Super Admin" : "Admin"
+                setUser({
+                    name: data.name || "",
+                    email: data.email,
+                    role: roleName,
+                    role_id: data.role
+                })
+                setName(data.name || "")
+            }
+
+            // Check MFA
+            const { data: factors } = await supabase.auth.mfa.listFactors()
+            const hasVerifiedFactor = factors?.all?.some(f => f.status === 'verified') || false
+            setMfaEnabled(hasVerifiedFactor)
+
+        } catch (error: any) {
+            console.error("Error fetching profile:", error)
+            setErrorMsg(error.message || "Erro desconhecido")
+            toast.error("Erro ao carregar perfil")
+        } finally {
+            setLoading(false)
         }
-      })
-      .catch(() => {
-        router.push("/auth/login");
-      });
-  }, [router]);
+    }
 
-  useEffect(() => {
-    const jwt = localStorage.getItem("jwt");
-    fetch("/api/admin/profile", {
-      headers: jwt ? { Authorization: `Bearer ${jwt}` } : {}
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro ao carregar perfil");
-        return res.json();
-      })
-      .then((data) => {
-        setProfile(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setSnackbar({ open: true, message: "Erro ao carregar perfil", severity: "error" });
-        setLoading(false);
-      });
-  }, []);
+    const handleUpdateProfile = async () => {
+        setUpdating(true)
+        try {
+            const token = document.cookie
+                .split("; ")
+                .find((row) => row.startsWith("access_token="))
+                ?.split("=")[1]
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push("/auth/login");
-      }
-    });
-  }, [router, supabase]);
+            if (!token) return
 
-  useEffect(() => {
-    supabase.auth.mfa.listFactors().then(({ data }) => {
-      const totp = data?.all?.find(f => f.factor_type === "totp" && f.status === "verified");
-      setMfa({ enabled: !!totp });
-    });
-  }, [supabase]);
+            const res = await fetch(`${API_BASE_URL}/api/admin/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ name })
+            })
 
-  const handleEnableMfa = async () => {
-    setQrLoading(true);
-    setQrError("");
-    try {
-      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
-      if (data?.totp?.qr_code && data?.id) {
-        setMfa({ enabled: false, qr: data.totp.qr_code });
-        setFactorId(data.id);
-        // Criar challenge para obter challengeId
-        const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: data.id });
-        if (challengeData?.id) {
-          setChallengeId(challengeData.id);
-        } else {
-          setQrError(challengeError?.message || "Erro ao gerar challenge.");
+            if (!res.ok) throw new Error("Falha ao atualizar")
+
+            toast.success("Perfil atualizado com sucesso!")
+            fetchProfile() // Refresh data
+        } catch (error) {
+            toast.error("Erro ao atualizar perfil")
+        } finally {
+            setUpdating(false)
         }
-      } else {
-        setQrError(error?.message || "Erro ao gerar QR Code.");
-      }
-    } catch (err) {
-      setQrError("Erro ao gerar QR Code.");
-    } finally {
-      setQrLoading(false);
     }
-  };
 
-  const handleVerifyMfa = async () => {
-    setQrLoading(true);
-    setQrError("");
-    try {
-      const { data, error } = await supabase.auth.mfa.verify({ factorId, challengeId, code: mfaCode });
-      if (!error) {
-        setSnackbar({ open: true, message: "MFA ativado com sucesso!", severity: "success" });
-        setMfa({ enabled: true });
-      } else {
-        setQrError(error?.message || "Código inválido. Tente novamente.");
-      }
-      console.log('MFA verify response:', data);
-    } catch {
-      setQrError("Erro ao verificar código.");
-    } finally {
-      setQrLoading(false);
+    const handleChangePassword = async () => {
+        if (newPassword !== confirmPassword) {
+            toast.error("As senhas não coincidem")
+            return
+        }
+        if (newPassword.length < 6) {
+            toast.error("A senha deve ter pelo menos 6 caracteres")
+            return
+        }
+
+        try {
+            const { error } = await supabase.auth.updateUser({ password: newPassword })
+            if (error) throw error
+
+            toast.success("Senha alterada com sucesso!")
+            setShowPasswordDialog(false)
+            setNewPassword("")
+            setConfirmPassword("")
+        } catch (error: any) {
+            toast.error("Erro ao alterar senha: " + error.message)
+        }
     }
-  };
 
-  const handleChange = (field: keyof AdminProfile, value: string) => {
-    setProfile((prev) => prev ? { ...prev, [field]: value } : prev);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const jwt = localStorage.getItem("jwt");
-      const res = await fetch("/api/admin/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(jwt ? { Authorization: `Bearer ${jwt}` } : {})
-        },
-        body: JSON.stringify(profile),
-      });
-      if (res.ok) {
-        setSnackbar({ open: true, message: "Perfil atualizado com sucesso", severity: "success" });
-        setEditMode(false);
-      } else {
-        throw new Error();
-      }
-    } catch {
-      setSnackbar({ open: true, message: "Erro ao atualizar perfil", severity: "error" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  useEffect(() => {
-    if (mfa?.qr) {
-      QRCode.toString(mfa.qr, { type: 'svg', width: 180 }, (err, svg) => {
-        if (!err && svg) setQrSvg(svg);
-      });
-    } else {
-      setQrSvg("");
-    }
-  }, [mfa?.qr]);
-
-  if (loading) {
     return (
-      <Grid container justifyContent="center" alignItems="center" style={{ minHeight: "60vh" }}>
-        <CircularProgress />
-      </Grid>
-    );
-  }
+        <div className="flex-1 space-y-6 p-8 pt-6">
+            <div className="space-y-0.5">
+                <h2 className="text-2xl font-bold tracking-tight">Perfil & Segurança</h2>
+                <p className="text-muted-foreground">
+                    Gerencie suas informações pessoais e configurações de segurança.
+                </p>
+            </div>
+            <Separator />
 
-  return (
-    <>
-      <Grid container justifyContent="center" alignItems="center" style={{ minHeight: "80vh" }}>
-        <Grid item xs={12} md={6}>
-          <Card elevation={6} style={{ borderRadius: 16, background: "#181A20", color: "#fff", padding: 32 }}>
-            <Typography variant="h5" gutterBottom>
-              Perfil do Admin
-            </Typography>
-            <Grid container spacing={2}>
-              {profile && Object.entries(profile).map(([key, value]) => (
-                <Grid item xs={12} key={key}>
-                  <TextField
-                    label={key}
-                    value={value}
-                    onChange={(e) => handleChange(key as keyof AdminProfile, e.target.value)}
-                    fullWidth
-                    disabled={!editMode}
-                    variant="outlined"
-                    InputProps={{ style: { color: "#fff" } }}
-                    InputLabelProps={{ style: { color: "#bbb" } }}
-                  />
-                </Grid>
-              ))}
-            </Grid>
-            <Grid container spacing={2} justifyContent="flex-end" style={{ marginTop: 24 }}>
-              <Grid item>
-                <Button variant="contained" color="primary" onClick={() => setEditMode((v) => !v)} disabled={saving}>
-                  {editMode ? "Cancelar" : "Editar"}
-                </Button>
-              </Grid>
-              {editMode && (
-                <Grid item>
-                  <Button variant="contained" color="success" onClick={handleSave} disabled={saving}>
-                    {saving ? <CircularProgress size={24} /> : "Salvar"}
-                  </Button>
-                </Grid>
-              )}
-            </Grid>
-            <Grid container justifyContent="center" alignItems="center" style={{ marginTop: 32 }}>
-              <Typography variant="h6" gutterBottom>Autenticação Multi-Fator (MFA - TOTP)</Typography>
-              {mfa?.enabled ? (
-                <Alert severity="success">MFA (TOTP) está ativado para sua conta.</Alert>
-              ) : (
-                <Grid item>
-                  {mfa?.qr ? (
-                    <Grid item>
-                      <Typography variant="body1" gutterBottom>Escaneie o QR Code abaixo com seu aplicativo autenticador (Google Authenticator, Authy, etc):</Typography>
-                      <Grid container justifyContent="center" style={{ margin: "16px 0" }}>
-                        {/* Novo componente para exibir QR Code SVG */}
-                        {qrSvg && (
-                          <div dangerouslySetInnerHTML={{ __html: qrSvg }} />
-                        )}
-                      </Grid>
-                      <TextField
-                        label="Código do aplicativo"
-                        value={mfaCode}
-                        onChange={e => setMfaCode(e.target.value)}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <Button variant="contained" color="success" onClick={handleVerifyMfa} disabled={qrLoading || !mfaCode} sx={{ mt: 2 }}>
-                        {qrLoading ? <CircularProgress size={24} /> : "Confirmar MFA"}
-                      </Button>
-                      {qrError && <Alert severity="error" sx={{ mt: 2 }}>{qrError}</Alert>}
-                    </Grid>
-                  ) : (
-                    <Button variant="contained" color="primary" onClick={handleEnableMfa} disabled={qrLoading} sx={{ mt: 2 }}>
-                      {qrLoading ? <CircularProgress size={24} /> : "Ativar MFA"}
-                    </Button>
-                  )}
-                </Grid>
-              )}
-            </Grid>
-          </Card>
-        </Grid>
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={4000}
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        >
-          <Alert severity={snackbar.severity} variant="filled" sx={{ width: "100%" }}>
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-      </Grid>
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3, backgroundColor: '#18181b', color: '#fff', borderRadius: '18px', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
-            <Typography variant="subtitle2" sx={{ color: '#bdbdbd', mb: 2 }}>Usuários - Últimos 30 dias</Typography>
-            <LineChart
-              height={220}
-              series={[{ data: metrics.usersData, label: 'Usuários', color: '#00bcd4' }]}
-              xAxis={[{ scaleType: 'point', data: metrics.usersData.map((_, i) => `${i + 1}`) }]}
-              sx={{ background: '#18181b', borderRadius: '18px', p: 2 }}
-              grid={{ vertical: true, horizontal: true }}
-            />
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3, backgroundColor: '#18181b', color: '#fff', borderRadius: '18px', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
-            <Typography variant="subtitle2" sx={{ color: '#bdbdbd', mb: 2 }}>Conversões - Últimos 30 dias</Typography>
-            <LineChart
-              height={220}
-              series={[{ data: metrics.conversionsData, label: 'Conversões', color: '#4caf50' }]}
-              xAxis={[{ scaleType: 'point', data: metrics.conversionsData.map((_, i) => `${i + 1}`) }]}
-              sx={{ background: '#18181b', borderRadius: '18px', p: 2 }}
-              grid={{ vertical: true, horizontal: true }}
-            />
-          </Card>
-        </Grid>
-      </Grid>
-    </>
-  );
+            <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
+                <div className="flex-1 lg:max-w-2xl space-y-6">
+
+                    {/* User Info Card */}
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <IconUser className="h-5 w-5 text-primary" />
+                                <CardTitle>Informações Pessoais</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {user === null && !loading && (
+                                <div className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
+                                    <span className="font-medium">Erro ao carregar dados!</span> Verifique sua conexão ou tente recarregar.
+                                    <br />
+                                    <span className="text-xs opacity-75">
+                                        Debug: {errorMsg || "Sem detalhes"}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="grid gap-2">
+                                <Label htmlFor="name">Nome Completo</Label>
+                                <Input
+                                    id="name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Seu nome"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input id="email" value={user?.email || "..."} disabled />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Função</Label>
+                                <div className="flex">
+                                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${user?.role === 'Super Admin' ? 'bg-purple-50 text-purple-700 ring-purple-700/10' : 'bg-blue-50 text-blue-700 ring-blue-700/10'}`}>
+                                        {user?.role || "..."}
+                                    </span>
+                                </div>
+                            </div>
+                            <Button onClick={handleUpdateProfile} disabled={updating}>
+                                {updating ? "Salvando..." : "Salvar Alterações"}
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    {/* Security Card */}
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <IconShieldLock className="h-5 w-5 text-primary" />
+                                <CardTitle>Segurança</CardTitle>
+                            </div>
+                            <CardDescription>
+                                Configurações de autenticação de dois fatores e senha.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* MFA Section */}
+                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <div className="flex items-center gap-2">
+                                        <IconDeviceMobile className="h-4 w-4" />
+                                        <Label className="text-base">MFA (Autenticação de 2 Fatores)</Label>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        Adicione uma camada extra de segurança à sua conta.
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={mfaEnabled}
+                                // onCheckedChange={handleMfaToggle} // Re-implement logic if needed or uncomment
+                                />
+                            </div>
+
+                            <div className="flex justify-end">
+                                <Button variant="outline" onClick={() => setShowPasswordDialog(true)}>Alterar Senha</Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+
+            {/* Password Change Dialog */}
+            {showPasswordDialog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-background dark:bg-zinc-900 p-6 rounded-lg w-full max-w-md border shadow-lg space-y-4">
+                        <h3 className="text-lg font-bold">Alterar Senha</h3>
+                        <div className="space-y-2">
+                            <Label>Nova Senha</Label>
+                            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Confirmar Nova Senha</Label>
+                            <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                        </div>
+                        <div className="flex justify-end gap-2 pt-4">
+                            <Button variant="ghost" onClick={() => setShowPasswordDialog(false)}>Cancelar</Button>
+                            <Button onClick={handleChangePassword}>Alterar</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
 }
-export default AdminProfile;
+

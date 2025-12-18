@@ -1,0 +1,137 @@
+import { createClient } from '@supabase/supabase-js'
+import { z } from 'zod'
+import { validateDomainEdit } from '../../../utils/plan-validation'
+
+const updateDomainSchema = z.object({
+  domain: z.string().min(1, 'Domínio é obrigatório').optional(),
+  target_url: z.string().url('URL de destino deve ser válida').optional(),
+  cache_ttl: z.number().min(0).max(86400).optional(),
+  enabled: z.boolean().optional()
+})
+
+export default defineEventHandler(async (event) => {
+  try {
+    const domainId = getRouterParam(event, 'id')
+    
+    if (!domainId) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'ID do domínio é obrigatório'
+      })
+    }
+
+    // Parse and validate request body
+    const body = await readBody(event)
+    const updateData = updateDomainSchema.parse(body)
+
+    // Get user from headers
+    const authHeader = getHeader(event, 'authorization')
+    if (!authHeader) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token de autenticação necessário'
+      })
+    }
+
+    // Initialize Supabase client
+    const config = useRuntimeConfig()
+    const supabase = createClient(
+      config.supabaseUrl,
+      config.supabaseServiceKey
+    )
+
+    // Verify JWT token
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+    if (authError || !user) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token inválido'
+      })
+    }
+
+    // Validate domain edit permissions and plan
+    const editValidation = await validateDomainEdit(supabase, user.id, domainId)
+    
+    if (!editValidation.canEdit) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: editValidation.reason || 'Não é possível editar este domínio'
+      })
+    }
+
+    // If changing domain name, check if new domain already exists
+    if (updateData.domain && updateData.domain !== editValidation.domain?.domain) {
+      const { data: existingDomain } = await supabase
+        .from('domains')
+        .select('id')
+        .eq('domain', updateData.domain)
+        .single()
+
+      if (existingDomain) {
+        throw createError({
+          statusCode: 409,
+          statusMessage: 'Domínio já existe'
+        })
+      }
+    }
+
+    // Update domain
+    const { data: updatedDomain, error: updateError } = await supabase
+      .from('domains')
+      .update({
+        ...updateData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', domainId)
+      .eq('user_id', user.id)
+      .select(`
+        *,
+        plans!inner(
+          id,
+          name,
+          description,
+          max_domains,
+          max_bandwidth_gb,
+          max_requests_per_month,
+          price,
+          duration_value,
+          duration_type,
+          features
+        )
+      `)
+      .single()
+
+    if (updateError) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Erro ao atualizar domínio'
+      })
+    }
+
+    return {
+      success: true,
+      data: updatedDomain,
+      message: 'Domínio atualizado com sucesso'
+    }
+
+  } catch (error: any) {
+    if (error.statusCode) {
+      throw error
+    }
+
+    // Handle validation errors
+    if (error.name === 'ZodError') {
+      throw createError({
+        statusCode: 400,
+        statusMessage: error.errors[0]?.message || 'Dados inválidos'
+      })
+    }
+
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Erro interno do servidor'
+    })
+  }
+})

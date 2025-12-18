@@ -1,0 +1,9 @@
+{
+  "extends": "./.nuxt/tsconfig.json",
+  "exclude": [
+    "*.cjs",
+    "test-*.cjs",
+    "debug-*.cjs",
+    "comprehensive-*.cjs"
+  ]
+}

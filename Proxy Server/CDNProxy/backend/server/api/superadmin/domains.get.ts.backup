@@ -1,0 +1,153 @@
+import { createClient } from '@supabase/supabase-js'
+
+export default defineEventHandler(async (event) => {
+  try {
+    // Get query parameters
+    const query = getQuery(event)
+    const page = parseInt(query.page as string) || 1
+    const limit = parseInt(query.limit as string) || 20
+    const search = query.search as string || ''
+    const status = query.status as string || ''
+    const userId = query.user_id as string || ''
+
+    // Get user from headers
+    const authHeader = getHeader(event, 'authorization')
+    if (!authHeader) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token de autenticação necessário'
+      })
+    }
+
+    // Initialize Supabase client
+    const config = useRuntimeConfig()
+    const supabase = createClient(
+      config.supabaseUrl,
+      config.supabaseServiceKey
+    )
+
+    // Verify JWT token and check superadmin role
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+    if (authError || !user) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token inválido'
+      })
+    }
+
+    // Check if user has superadmin privileges
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('email', user.email)
+      .single()
+
+    if (!userProfile || userProfile.role !== 'SUPERADMIN') {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Acesso negado - apenas superadmin'
+      })
+    }
+
+    // Build domains query with user and plan information
+    let domainsQuery = supabase
+      .from('domains')
+      .select(`
+        *,
+        users!inner(
+          id,
+          email,
+          name,
+          company
+        ),
+        plans!inner(
+          id,
+          name,
+          description,
+          max_domains,
+          max_bandwidth_gb,
+          price,
+          duration_value,
+          duration_type,
+          features
+        )
+      `, { count: 'exact' })
+
+    // Add search filter
+    if (search) {
+      domainsQuery = domainsQuery.or(`domain.ilike.%${search}%,target_url.ilike.%${search}%,users.email.ilike.%${search}%`)
+    }
+
+    // Add status filter
+    if (status) {
+      domainsQuery = domainsQuery.eq('active', status === 'active')
+    }
+
+    // Add user filter
+    if (userId) {
+      domainsQuery = domainsQuery.eq('user_id', userId)
+    }
+
+    // Add pagination
+    const offset = (page - 1) * limit
+    domainsQuery = domainsQuery
+      .range(offset, offset + limit - 1)
+      .order('created_at', { ascending: false })
+
+    // Execute query
+    const { data: domains, error, count } = await domainsQuery
+
+    if (error) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Erro ao buscar domínios'
+      })
+    }
+
+    // Get domain statistics
+    const { data: allDomains } = await supabase
+      .from('domains')
+      .select('active, created_at')
+
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+    const domainStats = {
+      total: count || 0,
+      active: allDomains?.filter(d => d.active).length || 0,
+      inactive: allDomains?.filter(d => !d.active).length || 0,
+      createdToday: allDomains?.filter(d => new Date(d.created_at) >= today).length || 0,
+      createdThisMonth: allDomains?.filter(d => new Date(d.created_at) >= thisMonth).length || 0
+    }
+
+    // Calculate pagination info
+    const totalPages = Math.ceil((count || 0) / limit)
+
+    return {
+      success: true,
+      data: domains,
+      stats: domainStats,
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    }
+
+  } catch (error) {
+    if (error.statusCode) {
+      throw error
+    }
+
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Erro interno do servidor'
+    })
+  }
+})

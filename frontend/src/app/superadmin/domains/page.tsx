@@ -1,373 +1,432 @@
-"use client";
-import { useEffect, useState } from 'react';
-import { Card, Typography, Box } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControlLabel, Checkbox, Select, MenuItem, InputLabel, FormControl, Snackbar, Alert } from '@mui/material';
-import { formatDateToSaoPaulo } from '../../../utils/formatDate';
-// Substituir Snackbar por react-toastify
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+"use client"
 
-export default function SuperadminDomainsPage() {
-  // Estados principais
-  const [domains, setDomains] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeCount, setActiveCount] = useState(0);
-  const [expiredCount, setExpiredCount] = useState(0);
-  const [expiringSoonCount, setExpiringSoonCount] = useState(0);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editDomain, setEditDomain] = useState<{
-    id?: string;
-    name?: string;
-    domain?: string;
-    destinationUrl?: string;
-    type?: string;
-    userId?: string;
-    expiresAt?: string;
-    displayName?: string;
-    status?: string;
-    user?: { name?: string; email?: string; id?: string };
-  } | null>(null);
-  const [form, setForm] = useState<{
-    name: string;
-    domain: string;
-    destinationUrl: string;
-    isReverseProxy: boolean;
-    isRedirect301: boolean;
-    userId: string;
-    expiresAt: string;
-    expiresHour: string;
-  }>({
-    name: '',
-    domain: '',
-    destinationUrl: '',
-    isReverseProxy: true,
-    isRedirect301: false,
-    userId: '',
-    expiresAt: '',
-    expiresHour: '23:59',
-  });
-  const [users, setUsers] = useState<Array<{ id: string; name?: string; email?: string }>>([]);
+import * as React from "react"
+import {
+    ColumnDef,
+    ColumnFiltersState,
+    SortingState,
+    VisibilityState,
+    flexRender,
+    getCoreRowModel,
+    getFilteredRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable,
+} from "@tanstack/react-table"
+import { ArrowUpDown, Link2, MoreHorizontal, Plus } from "lucide-react"
 
-  // Estados do Snackbar
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info'>('success');
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import { API_BASE_URL } from "@/lib/api"
+import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
+import Link from "next/link"
+import { RenewDomainDialog } from "@/components/superadmin/renew-domain-dialog"
+import { DomainDialog } from "@/components/superadmin/domain-dialog"
+import { Calendar, CheckCircle, XCircle, Pencil } from "lucide-react"
 
-  // Removido função showSnackbar fora do escopo do componente
-  const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' = 'success') => {
-    setSnackbarMessage(message);
-    setSnackbarSeverity(severity);
-    setSnackbarOpen(true);
-  };
+export type Domain = {
+    id: number
+    name: string
+    dominio: string
+    user_id: number
+    expired_at: string
+    target_url: string
+    plan_id: number
+    active: boolean
+    user_email?: string
+    user_name?: string
+}
 
-  useEffect(() => {
-    // Disparo automático de notificação para domínios próximos de expirar (SuperAdmin)
-    if (!loading && domains.length > 0) {
-      const now = new Date();
-      domains.forEach((domain: any) => {
-        if (domain.expiresAt) {
-          const expiresDate = new Date(domain.expiresAt);
-          const diffDays = (expiresDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-          if (diffDays <= 7 && diffDays > 0) {
-            toast.info(`O domínio ${domain.name} está prestes a expirar em ${formatDateToSaoPaulo(domain.expiresAt)}.`);
-          }
+export default function DomainsPage() {
+    const [data, setData] = React.useState<Domain[]>([])
+    const [loading, setLoading] = React.useState(true)
+    const [sorting, setSorting] = React.useState<SortingState>([])
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+    const [rowSelection, setRowSelection] = React.useState({})
+
+    // Dialog States
+    const [isRenewDialogOpen, setIsRenewDialogOpen] = React.useState(false)
+    const [domainToRenew, setDomainToRenew] = React.useState<Domain | null>(null)
+
+    const [isDomainDialogOpen, setIsDomainDialogOpen] = React.useState(false)
+    const [domainToEdit, setDomainToEdit] = React.useState<Domain | null>(null)
+
+    const fetchDomains = React.useCallback(async () => {
+        setLoading(true)
+        const token = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("access_token="))
+            ?.split("=")[1]
+
+        if (!token) return
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/superadmin/domains`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            if (res.ok) {
+                const json = await res.json()
+                setData(json || [])
+            } else {
+                toast.error("Falha ao carregar domínios.")
+            }
+        } catch (e) {
+            console.error(e)
+            toast.error("Erro ao carregar domínios")
+        } finally {
+            setLoading(false)
         }
-      });
-    }
-  }, [loading, domains]);
-  useEffect(() => {
-    // Disparo automático de notificação para domínios próximos de expirar (SuperAdmin)
-    if (!loading && domains.length > 0) {
-      const now = new Date();
-      domains.forEach((domain: any) => {
-        if (domain.expiration) {
-          const expiresDate = new Date(domain.expiration);
-          const diffDays = (expiresDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-          if (diffDays <= 7 && diffDays > 0) {
-            // Aqui pode-se disparar uma notificação
-          }
+    }, [])
+
+    React.useEffect(() => {
+        fetchDomains()
+    }, [fetchDomains])
+
+    const handleDelete = async (domain: Domain) => {
+        if (!confirm(`Tem certeza que deseja deletar o domínio ${domain.dominio}?`)) return
+        const token = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("access_token="))
+            ?.split("=")[1]
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/superadmin/domains/${domain.id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            if (res.ok) {
+                toast.success("Domínio removido")
+                fetchDomains()
+            } else {
+                toast.error("Erro ao remover domínio")
+            }
+        } catch (e) {
+            toast.error("Erro de conexão")
         }
-      });
     }
-  }, [loading, domains]);
-  useEffect(() => {
-    setLoading(true);
-    fetch('/api/domains')
-      .then(res => res.json())
-      .then(data => {
-        setDomains(data.domains || []);
-        setActiveCount(data.domains?.filter((d: any) => d.status === 'active').length || 0);
-        setExpiredCount(data.domains?.filter((d: any) => d.status === 'expired').length || 0);
-        setExpiringSoonCount(data.domains?.filter((d: any) => d.status === 'expiring').length || 0);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-    fetch('/api/users')
-      .then(res => res.json())
-      .then(data => setUsers(data.users || []));
-  }, []);
 
-  const handleOpenDialog = (domain?: any) => {
-    if (domain) {
-      setEditDomain(domain);
-      setForm({
-        name: domain.name || '',
-        domain: domain.domain || '',
-        destinationUrl: domain.destinationUrl || '',
-        isReverseProxy: domain.type === 'reverse',
-        isRedirect301: domain.type === 'redirect',
-        userId: domain.userId || '',
-        expiresAt: domain.expiresAt ? domain.expiresAt.split('T')[0] : '',
-        expiresHour: '23:59',
-      });
-    } else {
-      setEditDomain(null);
-      setForm({
-        name: '',
-        domain: '',
-        destinationUrl: '',
-        isReverseProxy: true,
-        isRedirect301: false,
-        userId: '',
-        expiresAt: '',
-        expiresHour: '23:59',
-      });
+    const handleToggleStatus = async (domain: Domain) => {
+        const action = domain.active ? "deactivate" : "activate"
+        const confirmMsg = domain.active ? "Desativar domínio?" : "Ativar domínio?"
+        if (!confirm(confirmMsg)) return
+
+        const token = document.cookie.split("; ").find(row => row.startsWith("access_token="))?.split("=")[1]
+        if (!token) return
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/superadmin/domains/${domain.id}/${action}`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            })
+
+            if (res.ok) {
+                toast.success(`Domínio ${domain.active ? "desativado" : "ativado"} com sucesso`)
+                fetchDomains()
+            } else {
+                toast.error("Falha ao alterar status")
+            }
+        } catch (err) {
+            toast.error("Erro de conexão")
+        }
     }
-    setOpenDialog(true);
-  };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setEditDomain(null);
-  };
-
-  const handleFormChange = (e: any) => {
-    const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
-
-  // Função para atualizar lista de domínios após operações
-  const fetchDomains = () => {
-    setLoading(true);
-    fetch('/api/domains')
-      .then(res => res.json())
-      .then(data => {
-        setDomains(data.domains || []);
-        setActiveCount(data.domains?.filter((d: any) => d.status === 'active').length || 0);
-        setExpiredCount(data.domains?.filter((d: any) => d.status === 'expired').length || 0);
-        setExpiringSoonCount(data.domains?.filter((d: any) => d.status === 'expiring').length || 0);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  };
-
-  // Submissão do formulário (criar/editar)
-  const handleSubmit = async () => {
-    const payload = {
-      name: form.name,
-      domain: form.domain,
-      destinationUrl: form.destinationUrl,
-      type: form.isReverseProxy ? 'reverse' : form.isRedirect301 ? 'redirect' : '',
-      userId: form.userId,
-      expiresAt: form.expiresAt ? `${form.expiresAt}T${form.expiresHour}` : null,
-    };
-    try {
-      if (editDomain) {
-        await fetch(`/api/domains/${editDomain.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        await fetch('/api/domains', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      }
-      fetchDomains();
-      handleCloseDialog();
-    } catch (err) {
-      // TODO: tratar erro
+    const handleRenew = (domain: Domain) => {
+        setDomainToRenew(domain)
+        setIsRenewDialogOpen(true)
     }
-  };
 
-  // Ações da tabela
-  const handleRenew = async (domain: any) => {
-    await fetch(`/api/domains/${domain.id}/renew`, { method: 'POST' });
-    fetchDomains();
-  };
-  const handleToggleStatus = async (domain: any) => {
-    await fetch(`/api/domains/${domain.id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: domain.status === 'active' ? 'inactive' : 'active' }),
-    });
-    fetchDomains();
-  };
-  const handleEdit = (domain: any) => {
-    handleOpenDialog(domain);
-  };
-  const handleDelete = async (domain: any) => {
-    await fetch(`/api/domains/${domain.id}`, { method: 'DELETE' });
-    fetchDomains();
-  };
+    const handleCreate = () => {
+        setDomainToEdit(null)
+        setIsDomainDialogOpen(true)
+    }
 
-  useEffect(() => {
-    const fetchAndDeactivate = async () => {
-      const res = await fetch('/api/domains');
-      const data = await res.json();
-      const now = new Date();
-      // Desativa domínios expirados
-      await Promise.all(
-        (data.domains || []).map(async (domain: any) => {
-          if (domain.status === 'ativo' && domain.expiration && new Date(domain.expiration) < now) {
-            await fetch(`/api/domains/${domain.id}/deactivate`, { method: 'PATCH' });
-          }
-        })
-      );
-      fetchDomains();
-    };
-    fetchAndDeactivate();
-  }, []);
+    const handleEdit = (domain: Domain) => {
+        // Verificar se expirado? Backend bloqueia update se expirado.
+        // Mas como editar só muda configurações e não renova, talvez devêssemos avisar o usuario.
+        const expiredAt = new Date(domain.expired_at)
+        if (expiredAt < new Date()) {
+            toast.warning("Este domínio está expirado. Renove-o antes de editar.")
+            // Opcional: impedir abertura ou deixar backend rejeitar. 
+            // Vamos deixar abrir e o backend rejeita se tentar salvar? 
+            // Melhor UX: avisar e permitir visualizar, mas o save vai falhar.
+        }
 
-  // Definição das colunas para o DataGrid
-  const tableColumns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 90 },
-    {
-      field: 'name',
-      headerName: 'Domínio',
-      width: 220,
-      renderCell: (params) => (
-        <Box>
-          <Typography variant="subtitle2">{params.row.displayName || params.row.name}</Typography>
-          <Typography variant="body2" color="text.secondary">{params.row.domain}</Typography>
-        </Box>
-      ),
-    },
-    {
-      field: 'userName',
-      headerName: 'Usuário',
-      width: 180,
-      renderCell: (params) => (
-        <Typography variant="body2">{params.row.userName || '-'}</Typography>
-      ),
-    },
-    { field: 'status', headerName: 'Status', width: 120 },
-    { field: 'expiresAt', headerName: 'Expira em', width: 180 },
-    {
-      field: 'actions',
-      headerName: 'Ações',
-      width: 260,
-      renderCell: (params: any) => (
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="outlined" size="small" onClick={() => handleEdit(params.row)}>Editar</Button>
-          <Button variant="outlined" size="small" onClick={() => handleRenew(params.row)}>Renovar</Button>
-          <Button variant="outlined" size="small" onClick={() => handleToggleStatus(params.row)}>{params.row.status === 'active' ? 'Desativar' : 'Ativar'}</Button>
-          <Button variant="outlined" size="small" color="error" onClick={() => handleDelete(params.row)}>Excluir</Button>
-        </Box>
-      ),
-    },
-  ];
+        setDomainToEdit(domain)
+        setIsDomainDialogOpen(true)
+    }
 
-  const tableData = domains.map((domain: any) => ({
-    id: domain.id,
-    name: domain.name,
-    displayName: domain.displayName,
-    domain: domain.domain,
-    status: domain.status,
-    expiresAt: domain.expiresAt ? formatDateToSaoPaulo(domain.expiresAt) : '-',
-    userId: domain.userId,
-    userName: domain.user?.name || '-',
-    type: domain.type,
-    destinationUrl: domain.destinationUrl,
-  }));
+    const columns: ColumnDef<Domain>[] = React.useMemo(() => [
+        {
+            id: "select",
+            header: ({ table }) => (
+                <Checkbox
+                    checked={
+                        table.getIsAllPageRowsSelected() ||
+                        (table.getIsSomePageRowsSelected() && "indeterminate")
+                    }
+                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    aria-label="Select all"
+                />
+            ),
+            cell: ({ row }) => (
+                <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
+            accessorKey: "name",
+            header: "Nome",
+            cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
+        },
+        {
+            accessorKey: "dominio",
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        Domínio
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                )
+            },
+            cell: ({ row }) => (
+                <div className="flex items-center gap-2">
+                    <Link2 className="h-4 w-4 text-muted-foreground" />
+                    <a href={`http://${row.getValue("dominio")}`} target="_blank" rel="noreferrer" className="hover:underline">
+                        {row.getValue("dominio")}
+                    </a>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "user_email",
+            header: "Proprietário",
+            cell: ({ row }) => {
+                const email = row.original.user_email || "N/A"
+                const name = row.original.user_name
+                return (
+                    <div className="flex flex-col">
+                        <span className="font-medium">{name || email}</span>
+                        {name && <span className="text-xs text-muted-foreground">{email}</span>}
+                    </div>
+                )
+            },
+        },
+        {
+            accessorKey: "active",
+            header: "Status",
+            cell: ({ row }) => {
+                const active = row.original.active
+                const expiredAt = new Date(row.original.expired_at)
+                const isExpired = expiredAt < new Date()
 
-  return (
-    <>
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-        <Card sx={{ flex: 1, minWidth: 220, p: 3, bgcolor: '#18181b', color: '#fff' }}>
-          <Typography variant="h6">Domínios Ativos</Typography>
-          <Typography variant="h4">{activeCount}</Typography>
-        </Card>
-        <Card sx={{ flex: 1, minWidth: 220, p: 3, bgcolor: '#18181b', color: '#fff' }}>
-          <Typography variant="h6">Domínios Expirados</Typography>
-          <Typography variant="h4">{expiredCount}</Typography>
-        </Card>
-        <Card sx={{ flex: 1, minWidth: 220, p: 3, bgcolor: '#18181b', color: '#fff' }}>
-          <Typography variant="h6">Próximos de Vencer</Typography>
-          <Typography variant="h4">{expiringSoonCount}</Typography>
-        </Card>
-        <Button variant="contained" color="primary" sx={{ height: 56 }} onClick={() => handleOpenDialog()}>
-          Criar Domínio
-        </Button>
-      </Box>
-      <DataGrid
-        rows={tableData}
-        columns={tableColumns}
-        autoHeight
-        sx={{
-          bgcolor: '#18181b',
-          color: '#fff',
-          borderRadius: 3,
-          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-          '& .MuiDataGrid-row:hover': {
-            backgroundColor: '#23232b',
-          },
-          '& .MuiDataGrid-row.Mui-selected': {
-            backgroundColor: '#00bcd4',
-            color: '#18181b',
-          },
-          '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#23232b',
-            color: '#bdbdbd',
-            fontWeight: 'bold',
-            fontSize: '1rem',
-          },
-          '& .MuiDataGrid-cell': {
-            borderBottom: '1px solid #23232b',
-          },
-        }}
-        initialState={{ pagination: { pageSize: 20 } }}
-        pagination
-        loading={loading}
-      />
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{editDomain ? 'Editar Domínio' : 'Criar Domínio'}</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField label="Nome" name="name" value={form.name} onChange={handleFormChange} fullWidth required />
-          <TextField label="Domínio" name="domain" value={form.domain} onChange={handleFormChange} fullWidth required />
-          <TextField label="URL de Destino" name="destinationUrl" value={form.destinationUrl} onChange={handleFormChange} fullWidth required />
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <FormControlLabel control={<Checkbox checked={form.isReverseProxy} name="isReverseProxy" disabled />} label="Proxy Reverso" />
-            <FormControlLabel control={<Checkbox checked={form.isRedirect301} name="isRedirect301" disabled />} label="Redirecionamento 301" />
-          </Box>
-          <Typography variant="body2" color="warning.main" sx={{ mt: 2 }}>
-            O tipo de entrega (Proxy/Redirecionamento) é definido automaticamente pelo sistema.
-          </Typography>
-          <FormControl fullWidth>
-            <InputLabel id="user-select-label">Usuário</InputLabel>
-            <Select labelId="user-select-label" name="userId" value={form.userId} onChange={handleFormChange} required>
-              {users.map((user) => (
-                <MenuItem key={user.id} value={user.id}>{user.name || user.email}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField label="Hora" name="expiresHour" value={form.expiresHour} disabled fullWidth />
-            <TextField label="Data de Expiração" name="expiresAt" value={form.expiresAt} onChange={handleFormChange} fullWidth placeholder="DD/MM/YYYY" inputProps={{ maxLength: 10 }} />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">{editDomain ? 'Salvar' : 'Criar'}</Button>
-        </DialogActions>
-      </Dialog>
-      <ToastContainer />
-    </>
-  );
+                if (isExpired) {
+                    return <Badge variant="destructive">Expirado</Badge>
+                }
+
+                return (
+                    <Badge variant={active ? "outline" : "destructive"} className={active ? "text-green-600 border-green-600" : ""}>
+                        {active ? "Ativo" : "Inativo"}
+                    </Badge>
+                )
+            }
+        },
+        {
+            id: "actions",
+            enableHiding: false,
+            cell: ({ row }) => {
+                const domain = row.original
+
+                return (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Abrir menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => handleEdit(domain)}>
+                                <Pencil className="mr-2 h-4 w-4" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => navigator.clipboard.writeText(domain.dominio)}
+                            >
+                                Copiar Domínio
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleRenew(domain)}>
+                                <Calendar className="mr-2 h-4 w-4" /> Renovar (Manual)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleStatus(domain)}>
+                                {domain.active ? (
+                                    <>
+                                        <XCircle className="mr-2 h-4 w-4 text-red-500" /> Desativar
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> Ativar
+                                    </>
+                                )}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(domain)}>
+                                Deletar
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )
+            },
+        },
+    ], [])
+
+    const table = useReactTable({
+        data,
+        columns,
+        onSortingChange: setSorting,
+        onColumnFiltersChange: setColumnFilters,
+        getCoreRowModel: getCoreRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        onColumnVisibilityChange: setColumnVisibility,
+        onRowSelectionChange: setRowSelection,
+        state: {
+            sorting,
+            columnFilters,
+            columnVisibility,
+            rowSelection,
+        },
+    })
+
+    return (
+        <div className="w-full">
+            <RenewDomainDialog
+                open={isRenewDialogOpen}
+                onOpenChange={setIsRenewDialogOpen}
+                domain={domainToRenew}
+                onSuccess={fetchDomains}
+            />
+            <DomainDialog
+                open={isDomainDialogOpen}
+                onOpenChange={setIsDomainDialogOpen}
+                domainToEdit={domainToEdit}
+                onSuccess={fetchDomains}
+            />
+            <div className="flex items-center py-4 justify-between" suppressHydrationWarning>
+                <Input
+                    placeholder="Filtrar por domínio..."
+                    value={(table.getColumn("dominio")?.getFilterValue() as string) ?? ""}
+                    onChange={(event) =>
+                        table.getColumn("dominio")?.setFilterValue(event.target.value)
+                    }
+                    className="max-w-sm"
+                />
+                <Button onClick={handleCreate}>
+                    <Plus className="mr-2 h-4 w-4" /> Novo Domínio
+                </Button>
+            </div>
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        {table.getHeaderGroups().map((headerGroup) => (
+                            <TableRow key={headerGroup.id}>
+                                {headerGroup.headers.map((header) => {
+                                    return (
+                                        <TableHead key={header.id}>
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                    header.column.columnDef.header,
+                                                    header.getContext()
+                                                )}
+                                        </TableHead>
+                                    )
+                                })}
+                            </TableRow>
+                        ))}
+                    </TableHeader>
+                    <TableBody>
+                        {table.getRowModel().rows?.length ? (
+                            table.getRowModel().rows.map((row) => (
+                                <TableRow
+                                    key={row.id}
+                                    data-state={row.getIsSelected() && "selected"}
+                                >
+                                    {row.getVisibleCells().map((cell) => (
+                                        <TableCell key={cell.id}>
+                                            {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext()
+                                            )}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell
+                                    colSpan={columns.length}
+                                    className="h-24 text-center"
+                                >
+                                    {loading ? "Carregando..." : "Nenhum domínio encontrado."}
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+            <div className="flex items-center justify-end space-x-2 py-4">
+                <div className="flex-1 text-sm text-muted-foreground">
+                    {table.getFilteredSelectedRowModel().rows.length} de{" "}
+                    {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
+                </div>
+                <div className="space-x-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => table.previousPage()}
+                        disabled={!table.getCanPreviousPage()}
+                    >
+                        Anterior
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => table.nextPage()}
+                        disabled={!table.getCanNextPage()}
+                    >
+                        Próximo
+                    </Button>
+                </div>
+            </div>
+        </div>
+    )
 }

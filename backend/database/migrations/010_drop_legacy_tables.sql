@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS active_storage_attachments, active_storage_blobs, active_storage_variant_records, admin_domains, ar_internal_metadata, geolocation_cache, schema_migrations, superadmin_profile, access_logs CASCADE;

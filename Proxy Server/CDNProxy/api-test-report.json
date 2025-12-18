@@ -1,0 +1,28 @@
+{
+  "timestamp": "2025-10-17T01:12:12.088Z",
+  "results": {
+    "connectivity": {
+      "success": 1,
+      "total": 2
+    },
+    "publicEndpoints": {
+      "success": 2,
+      "total": 2
+    },
+    "superadminLogin": true,
+    "superadminAPIs": {
+      "success": 12,
+      "total": 13
+    },
+    "adminLogin": true,
+    "adminAPIs": {
+      "success": 8,
+      "total": 10
+    }
+  },
+  "summary": {
+    "totalSuccess": 25,
+    "totalTests": 29,
+    "successRate": "86.21"
+  }
+}

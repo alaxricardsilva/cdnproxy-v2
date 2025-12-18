@@ -1,0 +1,85 @@
+import { createClient } from '@supabase/supabase-js'
+
+export default defineEventHandler(async (event) => {
+  try {
+    const domainId = getRouterParam(event, 'id')
+    
+    if (!domainId) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'ID do domínio é obrigatório'
+      })
+    }
+
+    // Get user from headers
+    const authHeader = getHeader(event, 'authorization')
+    if (!authHeader) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token de autenticação necessário'
+      })
+    }
+
+    // Initialize Supabase client
+    const config = useRuntimeConfig()
+    const supabase = createClient(
+      config.supabaseUrl,
+      config.supabaseServiceKey
+    )
+
+    // Verify JWT token
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+    if (authError || !user) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token inválido'
+      })
+    }
+
+    // Check if domain exists and belongs to user
+    const { data: domain, error: fetchError } = await supabase
+      .from('domains')
+      .select('*')
+      .eq('id', domainId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (fetchError || !domain) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Domínio não encontrado'
+      })
+    }
+
+    // Delete domain
+    const { error: deleteError } = await supabase
+      .from('domains')
+      .delete()
+      .eq('id', domainId)
+      .eq('user_id', user.id)
+
+    if (deleteError) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Erro ao deletar domínio'
+      })
+    }
+
+    return {
+      success: true,
+      message: 'Domínio deletado com sucesso'
+    }
+
+  } catch (error: any) {
+    if (error.statusCode) {
+      throw error
+    }
+
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Erro interno do servidor'
+    })
+  }
+})

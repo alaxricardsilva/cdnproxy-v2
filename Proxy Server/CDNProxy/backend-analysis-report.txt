@@ -1,0 +1,1184 @@
+🔍 Analisando código do backend para identificar erros...
+📁 Analisando diretório: ./backend
+📊 Encontrados 180 arquivos para análise
+
+📊 RELATÓRIO DE ANÁLISE DE CÓDIGO DO BACKEND:
+==================================================
+
+🚨 664 possíveis problemas encontrados:
+
+📈 Por tipo:
+   console.error: 321
+   console.log: 297
+   undefined variable: 23
+   hardcoded urls: 7
+   throw error: 14
+   missing await: 1
+   missing error handling: 1
+
+📁 Por arquivo:
+
+   backend/api/analytics/logs/[domainId].get.ts (2 problemas):
+     1. Linha 103: [console.error] console.error('Erro ao buscar logs:', logsError)
+     2. Linha 128: [console.error] console.error('Erro na API de logs:', error)
+
+   backend/plugins/dotenv.client.ts (1 problemas):
+     1. Linha 4: [console.log] console.log('🔧 Plugin dotenv carregado');
+
+   backend/server/api/admin/cart.get.ts (1 problemas):
+     1. Linha 54: [console.error] console.error('Erro ao buscar carrinho:', error)
+
+   backend/server/api/admin/domains/[id]/analytics.get.ts (5 problemas):
+     1. Linha 51: [console.log] console.log(`📊 [ADMIN ANALYTICS] Calculando métricas para domínio ${domainId} no período ${startDateStr} a ${endDateStr}`)
+     2. Linha 62: [console.error] console.error('❌ [ADMIN ANALYTICS] Erro ao buscar analytics_data:', analyticsError)
+     3. Linha 74: [console.error] console.error('❌ [ADMIN ANALYTICS] Erro ao buscar access_logs:', logsError)
+     4. Linha 183: [console.log] console.log(`✅ [ADMIN ANALYTICS] Métricas calculadas: ${totalVisits} visitas, ${uniqueVisitors} visitantes únicos, ${bandwidth}GB bandwidth`)
+     5. Linha 213: [console.error] console.error('Erro na API admin/domains/[id]/analytics:', error)
+
+   backend/server/api/admin/domains/[id].delete.ts (2 problemas):
+     1. Linha 91: [console.error] console.error('Erro ao excluir domínio:', deleteError)
+     2. Linha 104: [console.error] console.error('Erro na API admin/domains/[id].delete:', error)
+
+   backend/server/api/admin/domains/[id].get.ts (8 problemas):
+     1. Linha 5: [console.log] console.log('🔍 [ADMIN DOMAIN BY ID API] Iniciando...')
+     2. Linha 25: [console.log] console.log('📋 [ADMIN DOMAIN BY ID API] Token extraído, tamanho:', token.length)
+     3. Linha 40: [console.log] console.log('❌ [ADMIN DOMAIN BY ID API] Token inválido:', error?.message)
+     4. Linha 55: [console.log] console.log('✅ [ADMIN DOMAIN BY ID API] Admin local autenticado')
+     5. Linha 60: [console.log] console.log('❌ [ADMIN DOMAIN BY ID API] user.id não é um UUID válido:', user.id)
+     6. Linha 74: [console.log] console.log('❌ [ADMIN DOMAIN BY ID API] Usuário não encontrado no banco:', user.id)
+     7. Linha 89: [console.log] console.log('✅ [ADMIN DOMAIN BY ID API] Autenticação OK:', userData.email, 'Role:', userData.role)
+     8. Linha 141: [console.error] console.error('Erro na API admin/domains/[id]:', error)
+
+   backend/server/api/admin/domains/[id].patch.ts (3 problemas):
+     1. Linha 78: [undefined variable] if (body[field] !== undefined) {
+     2. Linha 147: [console.error] console.error('Erro ao atualizar domínio:', updateError)
+     3. Linha 161: [console.error] console.error('Erro na API admin/domains/[id].patch:', error)
+
+   backend/server/api/admin/domains.get.ts (9 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [domains.get] Iniciando busca de domínios...')
+     2. Linha 10: [console.log] console.log('✅ [domains.get] Autenticação bem-sucedida, user:', user)
+     3. Linha 19: [console.log] console.log('📋 [domains.get] Parâmetros:', { page, limit, search, status })
+     4. Linha 28: [console.log] console.log('🔍 [domains.get] Filtrando por user_id:', user.id)
+     5. Linha 34: [console.log] console.log('⚠️ [domains.get] user.id não é UUID válido, buscando todos os domínios')
+     6. Linha 37: [console.log] console.log('🔍 [domains.get] Admin local - buscando todos os domínios')
+     7. Linha 57: [console.log] console.log('🔍 [domains.get] Executando query...')
+     8. Linha 60: [console.log] console.log('📊 [domains.get] Resultado da query:', {
+     9. Linha 67: [console.error] console.error('❌ [domains.get] Supabase error:', error)
+
+   backend/server/api/admin/notifications/mark-read.post.ts (6 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [MARK READ API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [MARK READ API] Autenticação OK:', user.id)
+     3. Linha 14: [console.log] console.log('📋 [MARK READ API] Dados recebidos:', body)
+     4. Linha 41: [console.error] console.error('❌ [MARK READ API] Erro ao marcar como lidas:', updateError)
+     5. Linha 48: [console.log] console.log('✅ [MARK READ API] Notificações marcadas como lidas:', body.notification_ids.length)
+     6. Linha 59: [console.error] console.error('❌ [MARK READ API] Erro:', error)
+
+   backend/server/api/admin/notifications.get.ts (6 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [NOTIFICATIONS API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [NOTIFICATIONS API] Autenticação OK:', user.id)
+     3. Linha 20: [console.log] console.log('📋 [NOTIFICATIONS API] Parâmetros:', { page, limit, readStatus, offset })
+     4. Linha 46: [console.error] console.error('❌ [NOTIFICATIONS API] Erro ao buscar notificações:', notificationsError)
+     5. Linha 58: [console.log] console.log('✅ [NOTIFICATIONS API] Notificações encontradas:', notifications?.length || 0)
+     6. Linha 74: [console.error] console.error('❌ [NOTIFICATIONS API] Erro:', error)
+
+   backend/server/api/admin/payments/confirm-pix.post.ts (2 problemas):
+     1. Linha 128: [console.error] console.error('Erro ao criar notificação:', notificationError)
+     2. Linha 143: [console.error] console.error('Erro ao confirmar pagamento PIX:', error)
+
+   backend/server/api/admin/payments/create.post.ts (12 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [PAYMENT CREATE API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [PAYMENT CREATE API] Autenticação OK:', user.id)
+     3. Linha 14: [console.log] console.log('📋 [PAYMENT CREATE API] Dados recebidos:', body)
+     4. Linha 41: [console.error] console.error('❌ [PAYMENT CREATE API] Domínios não encontrados:', domainError)
+     5. Linha 59: [console.error] console.error('❌ [PAYMENT CREATE API] Plano não encontrado:', planError)
+     6. Linha 97: [console.error] console.error('❌ [PAYMENT CREATE API] Erro ao criar transação:', transactionError)
+     7. Linha 104: [console.log] console.log('✅ [PAYMENT CREATE API] Transação criada:', transaction.id)
+     8. Linha 152: [console.error] console.error('❌ [PAYMENT CREATE API] Erro:', error)
+     9. Linha 168: [console.log] console.log('🔄 [MERCADO PAGO] Processando pagamento...')
+     10. Linha 183: [console.log] console.log('🔄 [PAGBANK] Processando pagamento...')
+     11. Linha 197: [console.log] console.log('🔄 [PIX MANUAL] Processando pagamento...')
+     12. Linha 206: [console.error] console.error('❌ [PIX MANUAL] Erro ao buscar configuração PIX:', pixError)
+
+   backend/server/api/admin/payments/pix.post.ts (11 problemas):
+     1. Linha 6: [console.log] console.log('🔄 [PIX PAYMENT API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [PIX PAYMENT API] Autenticação OK:', user.id)
+     3. Linha 14: [console.log] console.log('📋 [PIX PAYMENT API] Dados recebidos:', body)
+     4. Linha 45: [console.error] console.error('❌ [PIX PAYMENT API] Erro ao verificar domínios:', domainsError)
+     5. Linha 60: [console.error] console.error('❌ [PIX PAYMENT API] Plano não encontrado:', planError)
+     6. Linha 103: [console.error] console.error('❌ [PIX PAYMENT API] Erro ao criar transação:', JSON.stringify(transactionError, null, 2))
+     7. Linha 104: [console.error] console.error('❌ [PIX PAYMENT API] Dados da transação:', JSON.stringify(transactionData, null, 2))
+     8. Linha 112: [console.log] console.log('✅ [PIX PAYMENT API] Transação PIX criada:', transaction.id)
+     9. Linha 130: [console.error] console.error('❌ [PIX PAYMENT API] Erro ao atualizar metadata:', updateError)
+     10. Linha 134: [console.log] console.log('✅ [PIX PAYMENT API] QR Code PIX salvo no metadata')
+     11. Linha 150: [console.error] console.error('Erro na API admin/payments/pix:', error)
+
+   backend/server/api/admin/payments.get.ts (3 problemas):
+     1. Linha 43: [console.log] console.log('⚠️ [payments.get] user.id não é UUID válido, buscando todos os pagamentos')
+     2. Linha 92: [console.error] console.error('Supabase error:', error)
+     3. Linha 144: [console.error] console.error('Erro na API admin/payments:', error)
+
+   backend/server/api/admin/profile.get.ts (1 problemas):
+     1. Linha 100: [console.error] console.error('Erro ao buscar perfil:', error)
+
+   backend/server/api/admin/profile.put.ts (1 problemas):
+     1. Linha 158: [console.error] console.error('Erro ao atualizar perfil:', error)
+
+   backend/server/api/admin/transactions/[id].delete.ts (7 problemas):
+     1. Linha 6: [console.log] console.log('🗑️ [CANCEL TRANSACTION API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [CANCEL TRANSACTION API] Autenticação OK:', user.id)
+     3. Linha 21: [console.log] console.log('📋 [CANCEL TRANSACTION API] Cancelando transação:', transactionId)
+     4. Linha 37: [console.error] console.error('❌ [CANCEL TRANSACTION API] Transação não encontrada:', transactionError)
+     5. Linha 77: [console.error] console.error('❌ [CANCEL TRANSACTION API] Erro ao cancelar transação:', updateError)
+     6. Linha 84: [console.log] console.log('✅ [CANCEL TRANSACTION API] Transação cancelada:', updatedTransaction.id)
+     7. Linha 97: [console.error] console.error('❌ [CANCEL TRANSACTION API] Erro:', error)
+
+   backend/server/api/admin/transactions/[id].get.ts (6 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [TRANSACTION DETAIL API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [TRANSACTION DETAIL API] Autenticação OK:', user.id)
+     3. Linha 21: [console.log] console.log('📋 [TRANSACTION DETAIL API] Buscando transação:', transactionId)
+     4. Linha 45: [console.error] console.error('❌ [TRANSACTION DETAIL API] Transação não encontrada:', transactionError)
+     5. Linha 52: [console.log] console.log('✅ [TRANSACTION DETAIL API] Transação encontrada:', transaction.id)
+     6. Linha 60: [console.error] console.error('❌ [TRANSACTION DETAIL API] Erro:', error)
+
+   backend/server/api/analytics/[domainId].get.ts (5 problemas):
+     1. Linha 54: [console.error] console.error('Domínio não encontrado:', { domainId, userId: user.id, error: domainError })
+     2. Linha 99: [console.error] console.error('Error fetching access logs:', accessError)
+     3. Linha 112: [console.error] console.error('Error fetching HLS metrics:', hlsError)
+     4. Linha 125: [console.error] console.error('Error fetching streaming metrics:', streamingError)
+     5. Linha 215: [console.error] console.error('Error fetching analytics:', error)
+
+   backend/server/api/analytics/access.get.ts (2 problemas):
+     1. Linha 56: [console.error] console.error('Erro ao buscar access logs:', accessError)
+     2. Linha 90: [console.error] console.error('Erro no endpoint de access logs:', error)
+
+   backend/server/api/analytics/bandwidth.get.ts (3 problemas):
+     1. Linha 42: [console.error] console.error('Error fetching user domains:', domainsError)
+     2. Linha 98: [console.error] console.error('Error fetching access logs:', logsError)
+     3. Linha 176: [console.error] console.error('Error in analytics bandwidth:', error)
+
+   backend/server/api/analytics/content.get.ts (2 problemas):
+     1. Linha 54: [console.error] console.error('Erro ao buscar access logs:', accessError)
+     2. Linha 124: [console.error] console.error('Erro no endpoint de content analytics:', error)
+
+   backend/server/api/analytics/errors.get.ts (4 problemas):
+     1. Linha 42: [console.error] console.error('Error fetching user domains:', domainsError)
+     2. Linha 115: [console.error] console.error('Error fetching error logs:', errorLogsResult.error)
+     3. Linha 123: [console.error] console.error('Error fetching all logs:', allLogsResult.error)
+     4. Linha 236: [console.error] console.error('Error in analytics errors:', error)
+
+   backend/server/api/analytics/geo.get.ts (3 problemas):
+     1. Linha 42: [console.error] console.error('Error fetching user domains:', domainsError)
+     2. Linha 93: [console.error] console.error('Error fetching geo logs:', logsError)
+     3. Linha 217: [console.error] console.error('Error in analytics geo:', error)
+
+   backend/server/api/analytics/metrics.get.ts (3 problemas):
+     1. Linha 54: [console.error] console.error('Erro ao buscar access logs:', accessError)
+     2. Linha 66: [console.error] console.error('Erro ao buscar analytics data:', analyticsError)
+     3. Linha 105: [console.error] console.error('Erro no endpoint de métricas:', error)
+
+   backend/server/api/analytics/overview.get.ts (3 problemas):
+     1. Linha 41: [console.error] console.error('Error fetching user domains:', domainsError)
+     2. Linha 87: [console.error] console.error('Error fetching access logs:', logsError)
+     3. Linha 171: [console.error] console.error('Error in analytics overview:', error)
+
+   backend/server/api/analytics/performance.get.ts (3 problemas):
+     1. Linha 42: [console.error] console.error('Error fetching user domains:', domainsError)
+     2. Linha 97: [console.error] console.error('Error fetching performance logs:', logsError)
+     3. Linha 270: [console.error] console.error('Error in analytics performance:', error)
+
+   backend/server/api/analytics/realtime.get.ts (4 problemas):
+     1. Linha 24: [console.error] console.error('Error fetching user domains:', domainsError)
+     2. Linha 95: [console.error] console.error('Error fetching realtime logs:', realtimeResult.error)
+     3. Linha 103: [console.error] console.error('Error fetching active visitors:', activeVisitorsResult.error)
+     4. Linha 202: [console.error] console.error('Error in analytics realtime:', error)
+
+   backend/server/api/analytics/requests.get.ts (3 problemas):
+     1. Linha 42: [console.error] console.error('Error fetching user domains:', domainsError)
+     2. Linha 96: [console.error] console.error('Error fetching access logs:', logsError)
+     3. Linha 210: [console.error] console.error('Error in analytics requests:', error)
+
+   backend/server/api/analytics/stats.get.ts (2 problemas):
+     1. Linha 42: [console.error] console.error('Error fetching user domains:', domainsError)
+     2. Linha 92: [console.error] console.error('Error fetching access logs:', error)
+
+   backend/server/api/analytics/traffic.get.ts (2 problemas):
+     1. Linha 56: [console.error] console.error('Erro ao buscar dados de analytics:', analyticsError)
+     2. Linha 162: [console.error] console.error('Erro na API de tráfego:', error)
+
+   backend/server/api/auth/2fa/confirm.post.ts (1 problemas):
+     1. Linha 96: [console.error] console.error('Erro ao salvar códigos de backup:', backupError)
+
+   backend/server/api/auth/me.get.ts (2 problemas):
+     1. Linha 30: [console.error] console.error('Erro ao buscar perfil do usuário:', userError)
+     2. Linha 59: [console.error] console.error('Erro na API /auth/me:', error)
+
+   backend/server/api/auth/profile.get.ts (2 problemas):
+     1. Linha 30: [console.error] console.error('Erro ao buscar perfil do usuário:', userError)
+     2. Linha 59: [console.error] console.error('Erro na API /auth/profile:', error)
+
+   backend/server/api/cron/check-expired-domains.ts (8 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [CRON EXPIRED DOMAINS] Iniciando verificação de domínios expirados...')
+     2. Linha 31: [console.error] console.error('❌ [CRON EXPIRED DOMAINS] Erro ao buscar domínios expirados:', fetchError)
+     3. Linha 39: [console.log] console.log('✅ [CRON EXPIRED DOMAINS] Nenhum domínio expirado encontrado')
+     4. Linha 47: [console.log] console.log(`🔄 [CRON EXPIRED DOMAINS] Encontrados ${expiredDomains.length} domínios expirados`)
+     5. Linha 60: [console.error] console.error('❌ [CRON EXPIRED DOMAINS] Erro ao desativar domínios:', updateError)
+     6. Linha 69: [console.log] console.log(`🔄 [CRON EXPIRED DOMAINS] Domínio desativado: ${domain.domain} (usuário: ${(domain.users as any).email})`)
+     7. Linha 72: [console.log] console.log(`✅ [CRON EXPIRED DOMAINS] ${expiredDomains.length} domínios desativados com sucesso`)
+     8. Linha 87: [console.error] console.error('💥 [CRON EXPIRED DOMAINS] Erro geral:', error)
+
+   backend/server/api/debug/env.get.ts (1 problemas):
+     1. Linha 10: [undefined variable] REDIS_PASSWORD: process.env.REDIS_PASSWORD !== undefined ? 'DEFINIDA' : 'NÃO ENCONTRADA',
+
+   backend/server/api/domain-status/[domain].get.ts (11 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [DOMAIN STATUS] Iniciando verificação de status...')
+     2. Linha 17: [console.log] console.log('🌐 [DOMAIN STATUS] Verificando domínio:', domain)
+     3. Linha 48: [console.error] console.error('❌ [DOMAIN STATUS] Domínio não encontrado:', domainError)
+     4. Linha 61: [console.log] console.log('📱 [DOMAIN STATUS] User-Agent detectado:', {
+     5. Linha 77: [console.log] console.log('🔄 [DOMAIN STATUS] Redirecionamento 301 para app/smartTV:', domainData.target_url)
+     6. Linha 93: [console.error] console.error('⚠️ [DOMAIN STATUS] Erro ao registrar analytics:', err)
+     7. Linha 100: [console.log] console.log('🔄 [DOMAIN STATUS] Redirecionamento para app/smartTV:', domainData.target_url)
+     8. Linha 116: [console.error] console.error('⚠️ [DOMAIN STATUS] Erro ao registrar analytics:', err)
+     9. Linha 139: [console.error] console.error('⚠️ [DOMAIN STATUS] Erro ao registrar analytics:', err)
+     10. Linha 166: [console.log] console.log('✅ [DOMAIN STATUS] Retornando status do domínio')
+     11. Linha 174: [console.error] console.error('💥 [DOMAIN STATUS] Erro geral:', error)
+
+   backend/server/api/domains/index.get.ts (1 problemas):
+     1. Linha 49: [console.error] console.error('Supabase error:', error)
+
+   backend/server/api/health.get.ts (1 problemas):
+     1. Linha 85: [console.log] console.log(`Health Check - Status: ${health.status}, Response Time: ${Date.now() - startTime}ms`)
+
+   backend/server/api/payments/create.post.ts (2 problemas):
+     1. Linha 138: [console.error] console.error('Error saving transaction:', transactionError)
+     2. Linha 170: [console.error] console.error('Error creating payment:', error)
+
+   backend/server/api/payments/mercadopago/create.post.ts (2 problemas):
+     1. Linha 163: [console.error] console.error('Erro ao salvar transação:', transactionError)
+     2. Linha 192: [console.error] console.error('Erro ao criar pagamento MercadoPago:', error)
+
+   backend/server/api/payments/mercadopago/status/[id].get.ts (3 problemas):
+     1. Linha 30: [console.error] console.error('Transação não encontrada:', { transactionId, userId: user.id, error: transactionError })
+     2. Linha 52: [console.error] console.error('Erro ao consultar status no MercadoPago:', error)
+     3. Linha 133: [console.error] console.error('Erro ao consultar status do pagamento:', error)
+
+   backend/server/api/payments/mercadopago/webhook.post.ts (7 problemas):
+     1. Linha 15: [console.log] console.log('MercadoPago Webhook received:', body)
+     2. Linha 57: [console.error] console.error('Transação não encontrada:', paymentId)
+     3. Linha 102: [console.error] console.error('Erro ao atualizar transação:', updateError)
+     4. Linha 159: [console.log] console.log(`Plano ativado para usuário ${transaction.user_id}`)
+     5. Linha 180: [console.error] console.error('Erro ao ativar plano:', planError)
+     6. Linha 222: [console.error] console.error('Erro ao processar webhook MercadoPago:', error)
+     7. Linha 239: [console.error] console.error('Erro ao salvar log do webhook:', logError)
+
+   backend/server/api/payments/pagbank/create.post.ts (2 problemas):
+     1. Linha 178: [console.error] console.error('Erro ao salvar transação:', transactionError)
+     2. Linha 202: [console.error] console.error('Erro ao criar pagamento PagBank:', error)
+
+   backend/server/api/payments/pagbank/status/[id].get.ts (2 problemas):
+     1. Linha 72: [console.error] console.error('Erro ao consultar status no PagBank:', error)
+     2. Linha 144: [console.error] console.error('Erro ao consultar status PagBank:', error)
+
+   backend/server/api/payments/pagbank/webhook.post.ts (9 problemas):
+     1. Linha 21: [console.error] console.error('PagBank não configurado')
+     2. Linha 30: [console.error] console.error('Erro ao processar notificação PagBank:', error)
+     3. Linha 35: [console.error] console.error('Dados de pagamento inválidos:', paymentData)
+     4. Linha 53: [console.error] console.error('Transação não encontrada:', paymentData.reference)
+     5. Linha 84: [console.error] console.error('Erro ao atualizar transação:', updateError)
+     6. Linha 129: [console.log] console.log(`Plano ativado para usuário ${transaction.user_id}`)
+     7. Linha 150: [console.error] console.error('Erro ao ativar plano:', error)
+     8. Linha 186: [console.error] console.error('Erro no webhook PagBank:', error)
+     9. Linha 204: [console.error] console.error('Erro ao salvar log:', logError)
+
+   backend/server/api/payments/webhook.post.ts (4 problemas):
+     1. Linha 51: [console.error] console.error('Transação não encontrada:', paymentId)
+     2. Linha 109: [console.error] console.error('Erro ao ativar plano do usuário:', userPlanError)
+     3. Linha 122: [console.error] console.error('Erro ao atualizar status do usuário:', userUpdateError)
+     4. Linha 132: [console.error] console.error('Erro no webhook:', error)
+
+   backend/server/api/plans/index.get.ts (5 problemas):
+     1. Linha 9: [console.log] console.log('🔍 Buscando planos no Supabase...')
+     2. Linha 19: [console.error] console.error('❌ Erro ao buscar planos:', error)
+     3. Linha 26: [console.log] console.log(`✅ Encontrados ${plans?.length || 0} planos`)
+     4. Linha 27: [console.log] console.log('📋 Planos encontrados:', plans)
+     5. Linha 52: [console.error] console.error('❌ Erro interno:', error)
+
+   backend/server/api/plans/upgrade.post.ts (1 problemas):
+     1. Linha 116: [console.error] console.error('Erro ao atualizar domínios:', updateDomainsError)
+
+   backend/server/api/proxy/cdn.post.ts (2 problemas):
+     1. Linha 70: [undefined variable] if (responseHeaders[key] === null || responseHeaders[key] === undefined) {
+     2. Linha 86: [console.error] console.error('Erro no proxy CDN:', error);
+
+   backend/server/api/proxy/stream.post.ts (2 problemas):
+     1. Linha 54: [undefined variable] if (responseHeaders[key] === null || responseHeaders[key] === undefined) {
+     2. Linha 67: [console.error] console.error('Erro no proxy de streaming:', error);
+
+   backend/server/api/streaming/hls-playlist.post.ts (4 problemas):
+     1. Linha 32: [undefined variable] if (body.totalDuration !== undefined && (typeof body.totalDuration !== 'number' || body.totalDuration < 0)) {
+     2. Linha 39: [undefined variable] if (body.watchedDuration !== undefined && (typeof body.watchedDuration !== 'number' || body.watchedDuration < 0)) {
+     3. Linha 46: [undefined variable] if (body.avgBitrate !== undefined && (typeof body.avgBitrate !== 'number' || body.avgBitrate < 0)) {
+     4. Linha 75: [console.error] console.error('Error collecting streaming metrics:', error)
+
+   backend/server/api/streaming/hls-segment.post.ts (1 problemas):
+     1. Linha 37: [console.error] console.error('Error collecting HLS metrics:', error)
+
+   backend/server/api/streaming/queue-status.get.ts (1 problemas):
+     1. Linha 22: [console.error] console.error('Error getting queue status:', error)
+
+   backend/server/api/superadmin/2fa/backup-codes.post.ts (2 problemas):
+     1. Linha 46: [console.error] console.error('Erro ao gerar novos códigos de backup:', updateError)
+     2. Linha 62: [console.error] console.error('Erro ao gerar códigos de backup 2FA:', error)
+
+   backend/server/api/superadmin/2fa/disable.post.ts (2 problemas):
+     1. Linha 76: [console.error] console.error('Erro ao desabilitar 2FA:', updateError)
+     2. Linha 89: [console.error] console.error('Erro ao desabilitar 2FA superadmin:', error)
+
+   backend/server/api/superadmin/2fa/setup.post.ts (2 problemas):
+     1. Linha 52: [console.error] console.error('Erro ao armazenar secret 2FA:', updateError)
+     2. Linha 69: [console.error] console.error('Erro no setup 2FA superadmin:', error)
+
+   backend/server/api/superadmin/2fa/verify.post.ts (2 problemas):
+     1. Linha 74: [console.error] console.error('Erro ao ativar 2FA:', updateError)
+     2. Linha 90: [console.error] console.error('Erro na verificação 2FA superadmin:', error)
+
+   backend/server/api/superadmin/admins.get.ts (2 problemas):
+     1. Linha 20: [console.log] console.log('✅ [admins.get] Admin local detectado, pulando verificação no banco')
+     2. Linha 124: [console.error] console.error('Erro na API de administradores:', error)
+
+   backend/server/api/superadmin/admins.post.ts (1 problemas):
+     1. Linha 125: [console.error] console.error('Erro ao criar administrador:', error)
+
+   backend/server/api/superadmin/analytics.get.ts (1 problemas):
+     1. Linha 281: [console.error] console.error('Erro ao buscar dados de analytics:', error)
+
+   backend/server/api/superadmin/domains/[id]/analytics.get.ts (7 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [DOMAIN ANALYTICS API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [DOMAIN ANALYTICS API] Autenticação OK:', user.id)
+     3. Linha 21: [console.log] console.log('📊 [DOMAIN ANALYTICS API] Domínio ID:', domainId)
+     4. Linha 39: [console.error] console.error('❌ [DOMAIN ANALYTICS API] Domínio não encontrado:', domainError)
+     5. Linha 46: [console.log] console.log('✅ [DOMAIN ANALYTICS API] Domínio encontrado:', domain.domain)
+     6. Linha 81: [console.log] console.log('✅ [DOMAIN ANALYTICS API] Retornando dados básicos')
+     7. Linha 89: [console.error] console.error('💥 [DOMAIN ANALYTICS API] Erro geral:', error)
+
+   backend/server/api/superadmin/domains/[id]/renew.put.ts (8 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [DOMAIN RENEW API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [DOMAIN RENEW API] Autenticação OK:', user.id)
+     3. Linha 23: [console.log] console.log('📋 [DOMAIN RENEW API] Dados recebidos:', { domainId, body })
+     4. Linha 51: [console.error] console.error('❌ [DOMAIN RENEW API] Domínio não encontrado:', checkError)
+     5. Linha 99: [console.log] console.log('🔄 [DOMAIN RENEW API] Renovando domínio:', {
+     6. Linha 136: [console.error] console.error('❌ [DOMAIN RENEW API] Erro ao renovar domínio:', updateError)
+     7. Linha 143: [console.log] console.log('✅ [DOMAIN RENEW API] Domínio renovado com sucesso:', renewedDomain.id)
+     8. Linha 157: [console.error] console.error('💥 [DOMAIN RENEW API] Erro geral:', error)
+
+   backend/server/api/superadmin/domains/[id]/status.put.ts (8 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [DOMAIN STATUS API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [DOMAIN STATUS API] Autenticação OK:', user.id)
+     3. Linha 23: [console.log] console.log('📋 [DOMAIN STATUS API] Dados recebidos:', { domainId, body })
+     4. Linha 41: [console.error] console.error('❌ [DOMAIN STATUS API] Domínio não encontrado:', checkError)
+     5. Linha 48: [console.log] console.log('🔄 [DOMAIN STATUS API] Alterando status do domínio:', {
+     6. Linha 84: [console.error] console.error('❌ [DOMAIN STATUS API] Erro ao atualizar status:', updateError)
+     7. Linha 91: [console.log] console.log('✅ [DOMAIN STATUS API] Status atualizado com sucesso:', updatedDomain.id)
+     8. Linha 100: [console.error] console.error('💥 [DOMAIN STATUS API] Erro geral:', error)
+
+   backend/server/api/superadmin/domains.delete.ts (8 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [DOMAINS DELETE API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [DOMAINS DELETE API] Autenticação OK:', user.id)
+     3. Linha 14: [console.log] console.log('📋 [DOMAINS DELETE API] Dados recebidos:', body)
+     4. Linha 32: [console.error] console.error('❌ [DOMAINS DELETE API] Domínio não encontrado:', checkError)
+     5. Linha 39: [console.log] console.log('🗑️ [DOMAINS DELETE API] Excluindo domínio:', existingDomain.domain)
+     6. Linha 48: [console.error] console.error('❌ [DOMAINS DELETE API] Erro ao excluir domínio:', deleteError)
+     7. Linha 55: [console.log] console.log('✅ [DOMAINS DELETE API] Domínio excluído com sucesso:', body.id)
+     8. Linha 63: [console.error] console.error('💥 [DOMAINS DELETE API] Erro geral:', error)
+
+   backend/server/api/superadmin/domains.get.ts (19 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [DOMAINS API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [DOMAINS API] Autenticação OK:', user.id)
+     3. Linha 20: [console.log] console.log('📋 [DOMAINS API] Parâmetros:', { page, limit, search, status, userId })
+     4. Linha 23: [console.log] console.log('🔨 [DOMAINS API] Construindo query...')
+     5. Linha 48: [console.log] console.log('🔍 [DOMAINS API] Aplicando filtro de busca:', search)
+     6. Linha 53: [console.log] console.log('📊 [DOMAINS API] Aplicando filtro de status:', status)
+     7. Linha 58: [console.log] console.log('👤 [DOMAINS API] Aplicando filtro de usuário:', userId)
+     8. Linha 63: [console.log] console.log('📊 [DOMAINS API] Buscando contagem total...')
+     9. Linha 69: [console.error] console.error('❌ [DOMAINS API] Erro na contagem:', countError)
+     10. Linha 76: [console.log] console.log('✅ [DOMAINS API] Contagem total:', count)
+     11. Linha 79: [console.log] console.log('📄 [DOMAINS API] Executando query principal...')
+     12. Linha 85: [console.error] console.error('❌ [DOMAINS API] Erro na query principal:', error)
+     13. Linha 92: [console.log] console.log('✅ [DOMAINS API] Query principal executada, resultados:', domains?.length || 0)
+     14. Linha 95: [console.log] console.log('📈 [DOMAINS API] Buscando estatísticas...')
+     15. Linha 101: [console.error] console.error('⚠️ [DOMAINS API] Erro nas estatísticas:', statsError)
+     16. Linha 112: [console.log] console.log('✅ [DOMAINS API] Estatísticas:', statistics)
+     17. Linha 128: [console.log] console.log('🎉 [DOMAINS API] Sucesso! Retornando dados...')
+     18. Linha 132: [console.error] console.error('💥 [DOMAINS API] Erro geral:', error)
+     19. Linha 133: [console.error] console.error('📍 [DOMAINS API] Stack trace:', error.stack)
+
+   backend/server/api/superadmin/domains.post.ts (8 problemas):
+     1. Linha 7: [console.log] console.log('🔍 [DOMAINS POST API] Iniciando...')
+     2. Linha 11: [console.log] console.log('✅ [DOMAINS POST API] Autenticação OK:', user.id)
+     3. Linha 15: [console.log] console.log('📋 [DOMAINS POST API] Dados recebidos:', body)
+     4. Linha 42: [console.error] console.error('❌ [DOMAINS POST API] Erro ao verificar domínio existente:', checkError)
+     5. Linha 86: [console.log] console.log('💾 [DOMAINS POST API] Inserindo domínio:', domainData)
+     6. Linha 114: [console.error] console.error('❌ [DOMAINS POST API] Erro ao inserir domínio:', insertError)
+     7. Linha 121: [console.log] console.log('✅ [DOMAINS POST API] Domínio criado com sucesso:', newDomain.id)
+     8. Linha 130: [console.error] console.error('💥 [DOMAINS POST API] Erro geral:', error)
+
+   backend/server/api/superadmin/domains.put.ts (18 problemas):
+     1. Linha 7: [console.log] console.log('🔍 [DOMAINS PUT API] Iniciando...')
+     2. Linha 11: [console.log] console.log('✅ [DOMAINS PUT API] Autenticação OK:', user.id)
+     3. Linha 15: [console.log] console.log('📋 [DOMAINS PUT API] Dados recebidos:', body)
+     4. Linha 33: [console.error] console.error('❌ [DOMAINS PUT API] Domínio não encontrado:', checkError)
+     5. Linha 46: [undefined variable] if (body.domain !== undefined) {
+     6. Linha 56: [console.error] console.error('❌ [DOMAINS PUT API] Erro ao verificar domínio:', domainError)
+     7. Linha 73: [undefined variable] if (body.target_url !== undefined) {
+     8. Linha 84: [undefined variable] if (body.user_id !== undefined) {
+     9. Linha 101: [undefined variable] if (body.plan_id !== undefined) {
+     10. Linha 105: [undefined variable] if (body.status !== undefined) {
+     11. Linha 109: [undefined variable] if (body.ssl_enabled !== undefined) {
+     12. Linha 113: [undefined variable] if (body.analytics_enabled !== undefined) {
+     13. Linha 117: [undefined variable] if (body.expires_at !== undefined) {
+     14. Linha 121: [undefined variable] if (body.redirect_301 !== undefined) {
+     15. Linha 125: [console.log] console.log('💾 [DOMAINS PUT API] Atualizando domínio:', updateData)
+     16. Linha 154: [console.error] console.error('❌ [DOMAINS PUT API] Erro ao atualizar domínio:', updateError)
+     17. Linha 161: [console.log] console.log('✅ [DOMAINS PUT API] Domínio atualizado com sucesso:', updatedDomain.id)
+     18. Linha 170: [console.error] console.error('💥 [DOMAINS PUT API] Erro geral:', error)
+
+   backend/server/api/superadmin/ip-cache/[ip].delete.ts (5 problemas):
+     1. Linha 6: [console.log] console.log('🗑️ [IP-CACHE] Iniciando remoção de IP do cache...')
+     2. Linha 35: [console.log] console.log('🎯 [IP-CACHE] Removendo IP:', ip)
+     3. Linha 58: [console.error] console.error('❌ [IP-CACHE] Erro ao remover IP:', error)
+     4. Linha 65: [console.log] console.log('✅ [IP-CACHE] IP removido com sucesso:', ip)
+     5. Linha 73: [console.error] console.error('❌ [IP-CACHE] Erro na API de remoção:', error)
+
+   backend/server/api/superadmin/ip-cache/clear-expired.post.ts (5 problemas):
+     1. Linha 6: [console.log] console.log('🧹 [IP-CACHE] Iniciando limpeza de cache expirado...')
+     2. Linha 29: [console.log] console.log('📅 [IP-CACHE] Limpando cache com mais de', daysOld, 'dias')
+     3. Linha 56: [console.error] console.error('❌ [IP-CACHE] Erro ao limpar cache:', error)
+     4. Linha 63: [console.log] console.log(`✅ [IP-CACHE] Cache limpo: ${expiredCount} entradas removidas`)
+     5. Linha 73: [console.error] console.error('❌ [IP-CACHE] Erro na API de limpeza:', error)
+
+   backend/server/api/superadmin/ip-cache.get.ts (5 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [IP-CACHE] Iniciando busca de IPs em cache...')
+     2. Linha 19: [console.log] console.log('📋 [IP-CACHE] Parâmetros:', { page, limit, search, country, city })
+     3. Linha 51: [console.error] console.error('❌ [IP-CACHE] Erro ao buscar cache:', error)
+     4. Linha 58: [console.log] console.log(`✅ [IP-CACHE] Encontrados ${ipCache?.length || 0} IPs em cache`)
+     5. Linha 114: [console.error] console.error('❌ [IP-CACHE] Erro na API:', error)
+
+   backend/server/api/superadmin/monitoring/api-keys/[id].delete.ts (2 problemas):
+     1. Linha 53: [console.error] console.error('Erro ao deletar chave de API:', deleteError)
+     2. Linha 65: [console.error] console.error('Erro no endpoint de deleção de chave de API:', error)
+
+   backend/server/api/superadmin/monitoring/api-keys.get.ts (2 problemas):
+     1. Linha 30: [console.error] console.error('Erro ao buscar chaves de API:', error)
+     2. Linha 54: [console.error] console.error('Erro no endpoint de chaves de API:', error)
+
+   backend/server/api/superadmin/monitoring/api-keys.post.ts (2 problemas):
+     1. Linha 59: [console.error] console.error('Erro ao criar chave de API:', error)
+     2. Linha 80: [console.error] console.error('Erro no endpoint de criação de chave de API:', error)
+
+   backend/server/api/superadmin/monitoring-servers/[id].delete.ts (5 problemas):
+     1. Linha 5: [console.log] console.log('🗑️ [DELETE MONITORING SERVER API] Iniciando exclusão...')
+     2. Linha 28: [console.error] console.error('❌ [DELETE MONITORING SERVER API] Servidor não encontrado:', serverId)
+     3. Linha 50: [console.error] console.error('❌ [DELETE MONITORING SERVER API] Erro ao deletar:', deleteError)
+     4. Linha 57: [console.log] console.log(`✅ [DELETE MONITORING SERVER API] Servidor ${existingServer.name} excluído com sucesso`)
+     5. Linha 65: [console.error] console.error('❌ [DELETE MONITORING SERVER API] Erro:', error.message)
+
+   backend/server/api/superadmin/monitoring-servers.get.ts (4 problemas):
+     1. Linha 5: [console.log] console.log('🔍 [MONITORING SERVERS API] Iniciando busca de servidores...')
+     2. Linha 18: [console.error] console.error('❌ [MONITORING SERVERS API] Erro ao buscar servidores:', error)
+     3. Linha 25: [console.log] console.log(`✅ [MONITORING SERVERS API] ${servers?.length || 0} servidores encontrados`)
+     4. Linha 34: [console.error] console.error('❌ [MONITORING SERVERS API] Erro:', error.message)
+
+   backend/server/api/superadmin/monitoring-servers.post.ts (8 problemas):
+     1. Linha 5: [console.log] console.log('📝 [CREATE MONITORING SERVER API] Iniciando criação/atualização...')
+     2. Linha 46: [console.log] console.log(`🔄 [CREATE MONITORING SERVER API] Atualizando servidor ${id}...`)
+     3. Linha 56: [console.error] console.error('❌ [CREATE MONITORING SERVER API] Erro ao atualizar:', error)
+     4. Linha 67: [console.log] console.log('➕ [CREATE MONITORING SERVER API] Criando novo servidor...')
+     5. Linha 80: [console.error] console.error('❌ [CREATE MONITORING SERVER API] Erro ao criar:', error)
+     6. Linha 100: [console.log] console.log('🔄 [CREATE MONITORING SERVER API] Desmarcando outros servidores como padrão...')
+     7. Linha 108: [console.log] console.log(`✅ [CREATE MONITORING SERVER API] Servidor ${id ? 'atualizado' : 'criado'} com sucesso`)
+     8. Linha 117: [console.error] console.error('❌ [CREATE MONITORING SERVER API] Erro:', error.message)
+
+   backend/server/api/superadmin/notifications/mark-read.post.ts (5 problemas):
+     1. Linha 8: [console.log] console.log('✅ [SUPERADMIN MARK READ API] Autenticação OK:', user.id)
+     2. Linha 21: [console.log] console.log('📝 [SUPERADMIN MARK READ] Marcando notificação como lida:', notificationId)
+     3. Linha 35: [console.error] console.error('❌ [SUPERADMIN MARK READ] Erro ao marcar como lida:', updateError)
+     4. Linha 42: [console.log] console.log('✅ [SUPERADMIN MARK READ] Notificação marcada como lida:', updatedNotification.id)
+     5. Linha 50: [console.error] console.error('❌ [SUPERADMIN MARK READ API] Erro:', error.message)
+
+   backend/server/api/superadmin/notifications.get.ts (6 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [SUPERADMIN NOTIFICATIONS API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [SUPERADMIN NOTIFICATIONS API] Autenticação OK:', user.id)
+     3. Linha 21: [console.log] console.log('📋 [SUPERADMIN NOTIFICATIONS API] Parâmetros:', { page, limit, status, type, offset })
+     4. Linha 48: [console.error] console.error('❌ [SUPERADMIN NOTIFICATIONS API] Erro ao buscar notificações:', notificationsError)
+     5. Linha 82: [console.log] console.log('✅ [SUPERADMIN NOTIFICATIONS API] Notificações encontradas:', notifications?.length || 0)
+     6. Linha 104: [console.error] console.error('❌ [SUPERADMIN NOTIFICATIONS API] Erro:', error)
+
+   backend/server/api/superadmin/payments/[id].delete.ts (2 problemas):
+     1. Linha 71: [console.error] console.error('Erro ao cancelar pagamento:', updateError)
+     2. Linha 107: [console.error] console.error('Erro ao cancelar pagamento:', error)
+
+   backend/server/api/superadmin/payments/[id].get.ts (2 problemas):
+     1. Linha 43: [console.error] console.error('Pagamento não encontrado:', { paymentId, error: paymentError })
+     2. Linha 86: [console.error] console.error('Erro ao buscar pagamento:', error)
+
+   backend/server/api/superadmin/payments-simple.get.ts (12 problemas):
+     1. Linha 19: [console.log] console.log('🔍 Testando API de pagamentos simplificada...')
+     2. Linha 20: [console.log] console.log('   Parâmetros:', { page, limit, search, status, userId })
+     3. Linha 23: [console.log] console.log('1️⃣ Testando SELECT simples...')
+     4. Linha 30: [console.error] console.error('❌ Erro no SELECT simples:', simpleError)
+     5. Linha 37: [console.log] console.log('✅ SELECT simples funcionou! Registros:', simpleData?.length || 0)
+     6. Linha 40: [console.log] console.log('2️⃣ Testando COUNT...')
+     7. Linha 46: [console.error] console.error('❌ Erro no COUNT:', countError)
+     8. Linha 48: [console.log] console.log('✅ COUNT funcionou! Total:', count || 0)
+     9. Linha 64: [console.log] console.log('3️⃣ Testando SELECT com filtros...')
+     10. Linha 70: [console.error] console.error('❌ Erro no SELECT com filtros:', filteredError)
+     11. Linha 77: [console.log] console.log('✅ SELECT com filtros funcionou! Registros:', filteredData?.length || 0)
+     12. Linha 98: [console.error] console.error('❌ Erro na API de pagamentos simplificada:', error)
+
+   backend/server/api/superadmin/payments.get.ts (3 problemas):
+     1. Linha 54: [console.error] console.error('Erro ao buscar pagamentos:', paymentsError)
+     2. Linha 67: [console.error] console.error('Erro ao contar pagamentos:', countError)
+     3. Linha 127: [console.error] console.error('Erro na API de pagamentos do superadmin:', error)
+
+   backend/server/api/superadmin/performance.get.ts (3 problemas):
+     1. Linha 84: [console.error] console.error('Erro na API de performance:', error)
+     2. Linha 156: [console.error] console.error('Erro ao obter informações de disco:', error)
+     3. Linha 283: [console.error] console.error('Erro ao buscar dados históricos:', error)
+
+   backend/server/api/superadmin/pix-config.get.ts (2 problemas):
+     1. Linha 16: [console.error] console.error('Erro ao buscar configurações PIX:', error)
+     2. Linha 28: [console.error] console.error('Erro no endpoint pix-config GET:', error)
+
+   backend/server/api/superadmin/pix-config.post.ts (2 problemas):
+     1. Linha 65: [console.error] console.error('Erro ao salvar configurações PIX:', result.error)
+     2. Linha 78: [console.error] console.error('Erro no endpoint pix-config POST:', error)
+
+   backend/server/api/superadmin/plans/[id].delete.ts (3 problemas):
+     1. Linha 39: [console.error] console.error('Erro ao verificar assinaturas:', subscriptionError)
+     2. Linha 60: [console.error] console.error('Erro ao excluir plano:', deleteError)
+     3. Linha 94: [console.error] console.error('Erro ao excluir plano:', error)
+
+   backend/server/api/superadmin/plans/[id].get.ts (2 problemas):
+     1. Linha 25: [console.error] console.error('Plano não encontrado:', { planId, error: planError })
+     2. Linha 115: [console.error] console.error('Erro ao buscar plano:', error)
+
+   backend/server/api/superadmin/plans/[id].put.ts (2 problemas):
+     1. Linha 125: [console.error] console.error('Erro ao atualizar plano:', updateError)
+     2. Linha 179: [console.error] console.error('Erro ao atualizar plano:', error)
+
+   backend/server/api/superadmin/plans.get.ts (3 problemas):
+     1. Linha 39: [console.error] console.error('Erro ao buscar planos:', plansError)
+     2. Linha 52: [console.error] console.error('Erro ao contar planos:', countError)
+     3. Linha 139: [console.error] console.error('Erro na API de planos do superadmin:', error)
+
+   backend/server/api/superadmin/plans.post.ts (2 problemas):
+     1. Linha 102: [console.error] console.error('Erro ao criar plano:', planError)
+     2. Linha 151: [console.error] console.error('Erro ao criar plano:', error)
+
+   backend/server/api/superadmin/profile.get.ts (5 problemas):
+     1. Linha 5: [console.log] console.log('🔧 API /api/superadmin/profile GET iniciada')
+     2. Linha 10: [console.log] console.log('✅ Autenticação bem-sucedida para usuário:', user.id)
+     3. Linha 59: [console.error] console.error('❌ Erro ao buscar perfil:', profileError)
+     4. Linha 92: [console.log] console.log('✅ Dados do perfil carregados com sucesso')
+     5. Linha 116: [console.error] console.error('❌ Erro na API profile GET:', error)
+
+   backend/server/api/superadmin/profile.put.ts (9 problemas):
+     1. Linha 5: [console.log] console.log('🔧 API /api/superadmin/profile PUT iniciada')
+     2. Linha 10: [console.log] console.log('✅ Autenticação bem-sucedida para usuário:', user.id)
+     3. Linha 14: [console.log] console.log('📝 Dados recebidos:', {
+     4. Linha 35: [console.error] console.error('❌ Erro ao atualizar perfil:', profileError)
+     5. Linha 65: [console.error] console.error('❌ Erro ao atualizar senha:', updateError)
+     6. Linha 105: [console.error] console.error('❌ Erro ao atualizar configurações de segurança:', updateError)
+     7. Linha 121: [console.error] console.error('❌ Erro ao criar configurações de segurança:', insertError)
+     8. Linha 130: [console.log] console.log('✅ Configurações salvas com sucesso')
+     9. Linha 138: [console.error] console.error('❌ Erro na API profile PUT:', error)
+
+   backend/server/api/superadmin/reports/generate.post.ts (1 problemas):
+     1. Linha 192: [console.error] console.error('Erro ao gerar relatório:', error)
+
+   backend/server/api/superadmin/security-logs.get.ts (5 problemas):
+     1. Linha 30: [console.error] console.error('Erro na API de security-logs:', error)
+     2. Linha 45: [console.log] console.log('🔍 [SECURITY-LOGS] Buscando logs de segurança reais...')
+     3. Linha 84: [console.error] console.error('Erro ao buscar access_logs:', accessLogsError)
+     4. Linha 88: [console.log] console.log(`📊 [SECURITY-LOGS] Encontrados ${accessLogs?.length || 0} logs de acesso`)
+     5. Linha 132: [console.error] console.error('Erro ao buscar logs de segurança:', error)
+
+   backend/server/api/superadmin/security-stats.get.ts (8 problemas):
+     1. Linha 6: [console.log] console.log('🔍 [SECURITY-STATS API] Iniciando...')
+     2. Linha 10: [console.log] console.log('✅ [SECURITY-STATS API] Usando supabaseAdmin')
+     3. Linha 14: [console.log] console.log('📊 [SECURITY-STATS API] Stats obtidas:', stats)
+     4. Linha 22: [console.error] console.error('❌ [SECURITY-STATS API] Erro:', error)
+     5. Linha 49: [console.error] console.error('Erro ao buscar usuários 2FA:', users2FAError || totalUsersError)
+     6. Linha 73: [console.log] console.log('Tabela auth_logs não encontrada, usando valor padrão')
+     7. Linha 91: [console.log] console.log('Erro ao buscar sessões ativas, usando valor estimado')
+     8. Linha 139: [console.error] console.error('Erro ao buscar estatísticas de segurança:', error)
+
+   backend/server/api/superadmin/servers/[id].delete.ts (3 problemas):
+     1. Linha 54: [console.error] console.error('Erro ao contar servidores primários:', countError)
+     2. Linha 84: [console.error] console.error('Erro ao deletar servidor:', deleteError)
+     3. Linha 129: [console.error] console.error('Erro ao deletar servidor:', error)
+
+   backend/server/api/superadmin/servers/[id].put.ts (9 problemas):
+     1. Linha 104: [undefined variable] if (name !== undefined) updateData.name = name
+     2. Linha 105: [undefined variable] if (hostname !== undefined) updateData.hostname = hostname
+     3. Linha 106: [undefined variable] if (ip_address !== undefined) updateData.ip_address = ip_address
+     4. Linha 107: [undefined variable] if (region !== undefined) updateData.region = region
+     5. Linha 108: [undefined variable] if (type !== undefined) updateData.type = type
+     6. Linha 109: [undefined variable] if (status !== undefined) updateData.status = status
+     7. Linha 110: [undefined variable] if (notes !== undefined) updateData.notes = notes
+     8. Linha 121: [console.error] console.error('Erro ao atualizar servidor:', updateError)
+     9. Linha 169: [console.error] console.error('Erro ao atualizar servidor:', error)
+
+   backend/server/api/superadmin/servers/health-check.post.ts (2 problemas):
+     1. Linha 37: [console.error] console.error('Erro ao buscar servidores:', fetchError)
+     2. Linha 163: [console.error] console.error('Erro no health check:', error)
+
+   backend/server/api/superadmin/servers.get.ts (4 problemas):
+     1. Linha 86: [console.error] console.error('Erro ao buscar servidores:', error)
+     2. Linha 144: [console.log] console.log('Servidor padrão já existe ou erro ao inserir:', insertError)
+     3. Linha 188: [console.error] console.error('Erro na API de servidores:', error)
+     4. Linha 232: [console.error] console.error('Erro ao obter métricas do servidor:', error)
+
+   backend/server/api/superadmin/servers.post.ts (2 problemas):
+     1. Linha 76: [console.error] console.error('Erro ao criar servidor:', error)
+     2. Linha 120: [console.error] console.error('Erro ao adicionar servidor:', error)
+
+   backend/server/api/superadmin/stats.get.ts (1 problemas):
+     1. Linha 113: [console.error] console.error('Erro ao buscar estatísticas do sistema:', error)
+
+   backend/server/api/superadmin/system/services.get.ts (5 problemas):
+     1. Linha 34: [console.error] console.error('Database health check failed:', error)
+     2. Linha 43: [console.log] console.log('Redis health check result:', redisHealth)
+     3. Linha 45: [console.error] console.error('Redis health check failed:', error)
+     4. Linha 62: [console.error] console.error('CDN health check failed:', error)
+     5. Linha 79: [console.error] console.error('Error checking services status:', error)
+
+   backend/server/api/superadmin/system-logs.get.ts (1 problemas):
+     1. Linha 107: [console.error] console.error('Erro ao buscar logs do sistema:', error)
+
+   backend/server/api/superadmin/traffic-stats.get.ts (34 problemas):
+     1. Linha 14: [console.log] console.log('🔍 Verificando token de autenticação...')
+     2. Linha 15: [console.log] console.log('🍪 Cookie auth-token:', getCookie(event, 'auth-token'))
+     3. Linha 16: [console.log] console.log('📋 Header authorization:', getHeader(event, 'authorization'))
+     4. Linha 17: [console.log] console.log('🔑 Token final extraído:', token ? token.substring(0, 50) + '...' : 'null')
+     5. Linha 20: [console.log] console.log('❌ Nenhum token encontrado')
+     6. Linha 30: [console.log] console.log('🔍 Verificando token de autenticação...')
+     7. Linha 31: [console.log] console.log('🔑 Token recebido (primeiros 50 chars):', token.substring(0, 50) + '...')
+     8. Linha 38: [console.log] console.log('🔑 Token decodificado do Supabase:', JSON.stringify(decoded, null, 2))
+     9. Linha 43: [console.log] console.log('✅ Role encontrada no Supabase user_metadata:', userRole)
+     10. Linha 45: [console.log] console.log('⚠️ Não encontrou role em user_metadata, estrutura do token:', {
+     11. Linha 54: [console.log] console.log('⚠️ Falha na decodificação do Supabase:', supabaseError.message)
+     12. Linha 58: [console.log] console.log('🔑 Payload do nosso sistema:', payload)
+     13. Linha 61: [console.log] console.log('✅ Role encontrada no nosso sistema:', userRole)
+     14. Linha 64: [console.error] console.error('❌ Erro ao verificar token do nosso sistema:', error.message)
+     15. Linha 68: [console.log] console.log('🎯 Role final detectada:', userRole)
+     16. Linha 71: [console.log] console.log('❌ Acesso negado - Role inválida ou não é SUPERADMIN')
+     17. Linha 78: [console.log] console.log('✅ Autenticação bem-sucedida para SUPERADMIN')
+     18. Linha 105: [console.log] console.log(`🔍 Buscando dados de tráfego para o período: ${period}`)
+     19. Linha 106: [console.log] console.log(`📅 Data de início: ${startDate.toISOString()}`)
+     20. Linha 107: [console.log] console.log(`📅 Data atual: ${now.toISOString()}`)
+     21. Linha 117: [console.error] console.error('❌ Erro ao buscar access_logs:', logsError)
+     22. Linha 124: [console.log] console.log(`✅ Access logs encontrados: ${accessLogs?.length || 0} registros`)
+     23. Linha 135: [console.log] console.log(`📊 Métricas calculadas:`)
+     24. Linha 136: [console.log] console.log(`   - Total Requests: ${totalRequests.toLocaleString()}`)
+     25. Linha 137: [console.log] console.log(`   - Total Bandwidth: ${totalBandwidthMB.toFixed(2)} MB`)
+     26. Linha 138: [console.log] console.log(`   - Total Download: ${totalDownloadMB.toFixed(2)} MB`)
+     27. Linha 139: [console.log] console.log(`   - Total Upload: ${totalUploadMB.toFixed(2)} MB`)
+     28. Linha 143: [console.log] console.log(`🔍 Logs sem bytes_transferred: ${logsWithoutBytes.length}/${totalRequests}`)
+     29. Linha 218: [console.log] console.log('🎯 Resultado final da API:')
+     30. Linha 219: [console.log] console.log(`   - Total Download: ${result.data.totalDownload} MB`)
+     31. Linha 220: [console.log] console.log(`   - Total Upload: ${result.data.totalUpload} MB`)
+     32. Linha 221: [console.log] console.log(`   - Total Bandwidth: ${result.data.totalBandwidth} MB`)
+     33. Linha 222: [console.log] console.log(`   - Total Requests: ${result.data.totalRequests}`)
+     34. Linha 227: [console.error] console.error('❌ Erro ao buscar dados de tráfego:', error)
+
+   backend/server/api/superadmin/traffic.get.ts (1 problemas):
+     1. Linha 170: [console.error] console.error('Erro ao buscar dados de tráfego:', error)
+
+   backend/server/api/superadmin/users/[id]/toggle-status.put.ts (1 problemas):
+     1. Linha 105: [console.error] console.error('Erro ao alterar status do usuário:', error)
+
+   backend/server/api/superadmin/users/[id].delete.ts (2 problemas):
+     1. Linha 84: [console.error] console.error('Erro ao deletar usuário do auth:', deleteAuthError)
+     2. Linha 107: [console.error] console.error('Erro ao deletar usuário:', error)
+
+   backend/server/api/superadmin/users/[id].put.ts (4 problemas):
+     1. Linha 47: [console.error] console.error('Usuário não encontrado:', { userId, error: fetchError })
+     2. Linha 105: [console.error] console.error('Erro ao atualizar senha:', passwordError)
+     3. Linha 118: [console.error] console.error('Erro ao atualizar email no auth:', emailError)
+     4. Linha 141: [console.error] console.error('Erro na API de edição de usuário:', error)
+
+   backend/server/api/superadmin/users.get.ts (16 problemas):
+     1. Linha 6: [console.log] console.log('=== Iniciando API de usuários ===')
+     2. Linha 9: [console.log] console.log('1. Verificando autenticação...')
+     3. Linha 11: [console.log] console.log('✅ Autenticação OK. Usuário:', user.email)
+     4. Linha 21: [console.log] console.log('2. Parâmetros da query:', { page, limit, search, role, status })
+     5. Linha 24: [console.log] console.log('3. Construindo query de usuários...')
+     6. Linha 42: [console.log] console.log('Aplicando filtro de busca:', search)
+     7. Linha 48: [console.log] console.log('Aplicando filtro de role:', role)
+     8. Linha 54: [console.log] console.log('Aplicando filtro de status:', status)
+     9. Linha 60: [console.log] console.log('4. Aplicando paginação:', { offset, limit })
+     10. Linha 66: [console.log] console.log('5. Executando query principal...')
+     11. Linha 70: [console.error] console.error('❌ Erro na query principal:', error)
+     12. Linha 77: [console.log] console.log('✅ Query principal executada. Usuários encontrados:', count)
+     13. Linha 80: [console.log] console.log('6. Buscando estatísticas...')
+     14. Linha 100: [console.log] console.log('✅ API de usuários concluída com sucesso')
+     15. Linha 117: [console.error] console.error('❌ Erro na API de usuários:', error)
+     16. Linha 118: [console.error] console.error('Stack trace:', error.stack)
+
+   backend/server/api/system/alerts.get.ts (4 problemas):
+     1. Linha 14: [console.log] console.log('Alerts API accessed', {
+     2. Linha 48: [console.log] console.log('Alert manually resolved', {
+     3. Linha 122: [console.log] console.log('Alert rule enabled', {
+     4. Linha 355: [console.error] console.error('Erro na API de alertas:', error)
+
+   backend/server/api/system/analyze.post.ts (1 problemas):
+     1. Linha 105: [console.error] console.error('Erro na análise do sistema:', error)
+
+   backend/server/api/system/background-tasks.get.ts (1 problemas):
+     1. Linha 28: [console.error] console.error('Error getting background tasks status:', error)
+
+   backend/server/api/system/background-tasks.post.ts (1 problemas):
+     1. Linha 64: [console.error] console.error('Error scheduling background task:', error)
+
+   backend/server/api/system/backup/download.get.ts (2 problemas):
+     1. Linha 91: [console.log] console.log(`Backup download requested: ${backup.filename} by ${authResult.user.email}`)
+     2. Linha 106: [console.error] console.error('Erro ao fazer download do backup:', error)
+
+   backend/server/api/system/cleanup-logs.post.ts (2 problemas):
+     1. Linha 121: [console.log] console.log('⚠️ [cleanup-logs.post] user.id não é UUID válido, pulando log de auditoria')
+     2. Linha 135: [console.error] console.error('Erro na limpeza de logs:', error)
+
+   backend/server/api/system/clear-cache.post.ts (1 problemas):
+     1. Linha 98: [console.error] console.error('Erro ao limpar cache:', error)
+
+   backend/server/api/system/database.get.ts (1 problemas):
+     1. Linha 9: [console.log] console.log('Database API - Authenticated user:', user.id, 'Role:', userProfile.role)
+
+   backend/server/api/system/maintenance.post.ts (2 problemas):
+     1. Linha 37: [console.log] console.log('Maintenance mode status:', maintenanceStatus)
+     2. Linha 46: [console.error] console.error('Erro ao alterar modo de manutenção:', error)
+
+   backend/server/api/system/monitoring.get.ts (5 problemas):
+     1. Linha 134: [console.error] console.error('Erro no monitoramento:', error)
+     2. Linha 192: [console.error] console.error('Erro ao buscar métricas de performance:', error)
+     3. Linha 241: [console.error] console.error('Erro ao buscar dados históricos:', error)
+     4. Linha 308: [console.error] console.error('Erro ao verificar APIs críticas:', error)
+     5. Linha 397: [hardcoded urls] const response = await fetch(`http://localhost:${port}/`, {
+
+   backend/server/api/system/query.post.ts (2 problemas):
+     1. Linha 119: [console.log] console.log('⚠️ [query.post] user.id não é UUID válido, pulando log de auditoria')
+     2. Linha 148: [console.log] console.log('⚠️ [query.post] user.id não é UUID válido, pulando log de auditoria')
+
+   backend/server/api/system/restart.post.ts (6 problemas):
+     1. Linha 27: [console.log] console.log(`System restart requested by ${authResult.user.email} at ${new Date().toISOString()}`)
+     2. Linha 44: [console.log] console.log('Initiating system restart...')
+     3. Linha 55: [console.log] console.log('Performing forced restart...')
+     4. Linha 59: [console.log] console.log('Performing graceful restart...')
+     5. Linha 64: [console.error] console.error('Error during system restart:', error)
+     6. Linha 71: [console.error] console.error('Erro ao reiniciar sistema:', error)
+
+   backend/server/api/system/security-logs.get.ts (2 problemas):
+     1. Linha 49: [console.error] console.error('Erro ao buscar access_logs:', logsError)
+     2. Linha 110: [console.error] console.error('Erro ao buscar logs de segurança:', error)
+
+   backend/server/api/system/test-email.post.ts (2 problemas):
+     1. Linha 53: [throw error] throw new Error(`Falha na conexão SMTP: ${err}`)
+     2. Linha 80: [console.error] console.error('Erro ao testar conexão SMTP:', error)
+
+   backend/server/api/test/access-logs.post.ts (5 problemas):
+     1. Linha 21: [console.log] console.log(`🧪 [TEST ACCESS LOGS] Testando com IP: ${ip}`)
+     2. Linha 28: [console.log] console.log(`🌍 [TEST ACCESS LOGS] Geolocalização obtida:`, {
+     3. Linha 58: [console.error] console.error('❌ [TEST ACCESS LOGS] Erro ao inserir:', insertError)
+     4. Linha 65: [console.log] console.log('✅ [TEST ACCESS LOGS] Log inserido com sucesso:', insertedLog.id)
+     5. Linha 83: [console.error] console.error('💥 [TEST ACCESS LOGS] Erro:', error)
+
+   backend/server/api/test/geolocation.post.ts (3 problemas):
+     1. Linha 29: [console.log] console.log(`🧪 [TEST GEOLOCATION] Testando geolocalização para IP: ${ip}`)
+     2. Linha 39: [console.log] console.log(`🌍 [TEST GEOLOCATION] Resultado:`, {
+     3. Linha 58: [console.error] console.error('💥 [TEST GEOLOCATION] Erro:', error)
+
+   backend/server/api/test-geolocation.get.ts (3 problemas):
+     1. Linha 9: [console.log] console.log(`🧪 [TEST GEOLOCATION] Testando geolocalização para IP: ${ip}`)
+     2. Linha 19: [console.log] console.log(`🌍 [TEST GEOLOCATION] Resultado:`, {
+     3. Linha 38: [console.error] console.error('💥 [TEST GEOLOCATION] Erro:', error)
+
+   backend/server/api/users.get.ts (2 problemas):
+     1. Linha 70: [console.error] console.error('Erro ao buscar usuários:', usersError)
+     2. Linha 104: [console.error] console.error('Erro na API /users:', error)
+
+   backend/server/middleware/0.cors.ts (7 problemas):
+     1. Linha 9: [hardcoded urls] 'https://app.cdnproxy.top',
+     2. Linha 10: [hardcoded urls] 'http://localhost:3000',
+     3. Linha 11: [hardcoded urls] 'http://127.0.0.1:3000',
+     4. Linha 17: [hardcoded urls] (origin && origin.startsWith('http://localhost:')) ||
+     5. Linha 18: [hardcoded urls] (origin && origin.startsWith('http://127.0.0.1:'))
+     6. Linha 34: [hardcoded urls] 'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.cdnproxy.top https://supabase.co wss:; frame-ancestors 'none';"
+     7. Linha 41: [console.log] console.log('CORS Middleware - Origin:', origin, 'Allowed:', isAllowedOrigin)
+
+   backend/server/middleware/0.https-redirect.ts (1 problemas):
+     1. Linha 18: [console.log] console.log(`HTTPS Redirect: ${url.href} -> https://${host}${url.pathname}${url.search}`)
+
+   backend/server/middleware/1.rate-limit.ts (2 problemas):
+     1. Linha 183: [console.log] console.log(`✅ Rate limit OK for IP ${clientIP} on ${url} (${remaining} remaining)`)
+     2. Linha 193: [console.error] console.error('❌ Error in rate limit middleware:', error)
+
+   backend/utils/analytics-collector.ts (9 problemas):
+     1. Linha 111: [console.error] console.error('Error processing analytics queue:', error)
+     2. Linha 135: [console.error] console.error('Error inserting access logs:', accessError)
+     3. Linha 146: [console.error] console.error('Error inserting HLS metrics:', hlsError)
+     4. Linha 157: [console.error] console.error('Error inserting streaming metrics:', streamingError)
+     5. Linha 161: [console.log] console.log(`Processed batch: ${accessLogs.length} access logs, ${hlsMetrics.length} HLS metrics, ${streamingMetrics.length} streaming metrics`)
+     6. Linha 163: [console.error] console.error('Error processing analytics batch:', error)
+     7. Linha 273: [console.error] console.error('Error collecting access log:', error)
+     8. Linha 312: [console.error] console.error('Error collecting HLS metrics:', error)
+     9. Linha 362: [console.error] console.error('Error collecting streaming metrics:', error)
+
+   backend/utils/auth.ts (1 problemas):
+     1. Linha 17: [console.error] console.error('JWT verification failed:', error)
+
+   backend/utils/background-tasks.ts (21 problemas):
+     1. Linha 56: [console.log] console.log(`Background task added: ${task.type} (${task.id})`)
+     2. Linha 69: [console.log] console.log('Background task processing started')
+     3. Linha 79: [console.log] console.log('Background task processing stopped')
+     4. Linha 96: [console.log] console.log(`Processing ${pendingTasks.length} background tasks`)
+     5. Linha 108: [console.log] console.log(`Processing task: ${task.type} (${task.id}) - Attempt ${task.attempts}`)
+     6. Linha 124: [throw error] throw new Error(`Unknown task type: ${task.type}`)
+     7. Linha 128: [console.log] console.log(`Task completed: ${task.type} (${task.id})`)
+     8. Linha 136: [console.error] console.error(`Task failed: ${task.type} (${task.id})`, error)
+     9. Linha 141: [console.error] console.error(`Task permanently failed: ${task.type} (${task.id})`)
+     10. Linha 147: [console.log] console.log(`Task rescheduled: ${task.type} (${task.id}) for ${task.scheduledFor}`)
+     11. Linha 194: [throw error] throw new Error(`Error fetching access logs: ${accessError.message}`)
+     12. Linha 211: [throw error] throw new Error(`Error fetching streaming metrics: ${streamingError.message}`)
+     13. Linha 232: [console.log] console.log(`Analytics aggregation completed for ${period} period:`, stats)
+     14. Linha 253: [console.error] console.error(`Error cleaning up ${table}:`, error)
+     15. Linha 255: [console.log] console.log(`Cleaned up old records from ${table} (older than ${retentionDays} days)`)
+     16. Linha 258: [console.error] console.error(`Error during cleanup of ${table}:`, error)
+     17. Linha 265: [console.log] console.log(`Generating ${data.reportType} report for domain ${data.domainId}`)
+     18. Linha 273: [console.log] console.log(`Report generated successfully: ${data.reportType}`)
+     19. Linha 298: [throw error] throw new Error(`Error calculating bandwidth: ${error.message}`)
+     20. Linha 303: [console.log] console.log(`Bandwidth calculation completed: ${totalBandwidth} bytes for ${period} period`)
+     21. Linha 396: [console.log] console.log('Background tasks system initialized')
+
+   backend/utils/geolocation.ts (10 problemas):
+     1. Linha 91: [console.log] console.log(`Tentando API ${api.name} para IP ${ip}`)
+     2. Linha 92: [missing await] const response = await fetch(api.url)
+     3. Linha 92: [missing error handling] const response = await fetch(api.url)
+     4. Linha 95: [console.log] console.log(`API ${api.name} retornou status ${response.status}`)
+     5. Linha 103: [console.log] console.log(`API ${api.name} falhou:`, data.message)
+     6. Linha 108: [console.log] console.log(`API ${api.name} falhou:`, data.reason)
+     7. Linha 117: [console.log] console.log(`API ${api.name} retornou dados válidos para ${ip}:`, geoData)
+     8. Linha 121: [console.log] console.log(`API ${api.name} retornou dados incompletos para ${ip}:`, geoData)
+     9. Linha 123: [console.error] console.error(`Erro na API ${api.name} para IP ${ip}:`, error)
+     10. Linha 127: [console.log] console.log(`Todas as APIs falharam para IP ${ip}`)
+
+   backend/utils/hybrid-auth.ts (48 problemas):
+     1. Linha 11: [console.log] console.log('🔧 [HYBRID-AUTH] Carregando variáveis de ambiente...')
+     2. Linha 12: [console.log] console.log('📋 [HYBRID-AUTH] supabaseUrl:', !!supabaseUrl)
+     3. Linha 13: [console.log] console.log('📋 [HYBRID-AUTH] supabaseServiceKey:', !!supabaseServiceKey)
+     4. Linha 14: [console.log] console.log('📋 [HYBRID-AUTH] supabaseAnonKey:', !!supabaseAnonKey)
+     5. Linha 15: [console.log] console.log('📋 [HYBRID-AUTH] jwtSecret:', !!jwtSecret, 'length:', jwtSecret?.length)
+     6. Linha 18: [console.error] console.error('❌ [HYBRID-AUTH] Variáveis de ambiente do Supabase faltando:')
+     7. Linha 19: [console.error] console.error('supabaseUrl:', !!supabaseUrl)
+     8. Linha 20: [console.error] console.error('supabaseServiceKey:', !!supabaseServiceKey)
+     9. Linha 21: [console.error] console.error('supabaseAnonKey:', !!supabaseAnonKey)
+     10. Linha 22: [throw error] throw new Error('Configuração do Supabase incompleta')
+     11. Linha 26: [console.error] console.error('❌ [HYBRID-AUTH] JWT_SECRET não definido')
+     12. Linha 27: [throw error] throw new Error('JWT_SECRET é obrigatório')
+     13. Linha 48: [console.log] console.log('🔍 [requireUserAuth] Iniciando validação...')
+     14. Linha 51: [console.log] console.log('📋 [requireUserAuth] Auth header:', authHeader ? 'Presente' : 'Ausente')
+     15. Linha 54: [console.log] console.log('❌ [requireUserAuth] Token de autenticação necessário')
+     16. Linha 62: [console.log] console.log('📋 [requireUserAuth] Token extraído, tamanho:', token.length)
+     17. Linha 66: [console.log] console.log('🔍 [requireUserAuth] Tentando validar como JWT local...')
+     18. Linha 68: [console.log] console.log('✅ [requireUserAuth] JWT local válido:', decoded)
+     19. Linha 72: [console.log] console.log('🔍 [requireUserAuth] Buscando usuário no banco:', decoded.id)
+     20. Linha 80: [console.log] console.log('❌ [requireUserAuth] Erro ao buscar usuário:', userError.message)
+     21. Linha 82: [console.log] console.log('❌ [requireUserAuth] Usuário não encontrado no banco')
+     22. Linha 84: [console.log] console.log('✅ [requireUserAuth] Usuário encontrado via JWT local:', userData.email)
+     23. Linha 100: [console.log] console.log('❌ [requireUserAuth] JWT local não contém ID do usuário')
+     24. Linha 103: [console.log] console.log('📋 [requireUserAuth] Erro na validação JWT local:', jwtError.message)
+     25. Linha 104: [console.log] console.log('📋 [requireUserAuth] Tentando Supabase...')
+     26. Linha 111: [console.log] console.log('❌ [requireUserAuth] Token inválido:', error?.message)
+     27. Linha 126: [console.log] console.log('❌ [requireUserAuth] Usuário não encontrado no banco:', user.id)
+     28. Linha 144: [console.log] console.log('✅ [requireUserAuth] Usuário autenticado:', userData.email)
+     29. Linha 148: [console.error] console.error('❌ [requireUserAuth] Erro:', error.message)
+     30. Linha 167: [console.log] console.log('🔍 [requireAdminAuth] Iniciando validação admin...')
+     31. Linha 168: [console.log] console.log('📋 [requireAdminAuth] JWT_SECRET disponível:', !!jwtSecret)
+     32. Linha 169: [console.log] console.log('📋 [requireAdminAuth] JWT_SECRET length:', jwtSecret?.length)
+     33. Linha 180: [console.log] console.log('📋 [requireAdminAuth] Token extraído, tamanho:', token.length)
+     34. Linha 181: [console.log] console.log('📋 [requireAdminAuth] Token início:', token.substring(0, 50))
+     35. Linha 185: [console.log] console.log('🔍 [requireAdminAuth] Tentando validar JWT local com secret...')
+     36. Linha 186: [console.log] console.log('📋 [requireAdminAuth] Usando JWT_SECRET:', jwtSecret?.substring(0, 20) + '...')
+     37. Linha 188: [console.log] console.log('✅ [requireAdminAuth] JWT local válido:', decoded)
+     38. Linha 192: [console.log] console.log('✅ [requireAdminAuth] Admin local autenticado')
+     39. Linha 209: [console.log] console.log('⚠️ [requireAdminAuth] JWT local válido mas não é admin local - tentando Supabase. Role:', decoded.role, 'UserId:', decoded.userId)
+     40. Linha 214: [console.log] console.log('📋 [requireAdminAuth] Erro na validação JWT local:', jwtError.message)
+     41. Linha 215: [console.log] console.log('📋 [requireAdminAuth] Tentando Supabase...')
+     42. Linha 222: [console.log] console.log('❌ [requireAdminAuth] Token inválido:', error?.message)
+     43. Linha 229: [console.log] console.log('📋 [requireAdminAuth] Usuário Supabase encontrado:', user.id, user.email)
+     44. Linha 234: [console.log] console.log('❌ [requireAdminAuth] user.id não é um UUID válido:', user.id)
+     45. Linha 249: [console.log] console.log('❌ [requireAdminAuth] Usuário não encontrado:', user.id, userError?.message)
+     46. Linha 260: [console.log] console.log('❌ [requireAdminAuth] Role insuficiente:', userData.role, 'Necessário:', requiredRole)
+     47. Linha 267: [console.log] console.log('✅ [requireAdminAuth] Admin autenticado:', userData.email, 'Role:', userData.role)
+     48. Linha 280: [console.error] console.error('❌ [requireAdminAuth] Erro na autenticação admin:', error.message)
+
+   backend/utils/logger.ts (7 problemas):
+     1. Linha 50: [console.log] console.log(this.formatLog(logEntry))
+     2. Linha 92: [console.error] console.error(this.formatLog(logEntry))
+     3. Linha 136: [console.error] console.error(this.formatLog(logEntry))
+     4. Linha 140: [console.log] console.log(this.formatLog(logEntry))
+     5. Linha 166: [console.log] console.log(this.formatLog(logEntry))
+     6. Linha 195: [console.error] console.error(this.formatLog(logEntry))
+     7. Linha 197: [console.log] console.log(this.formatLog(logEntry))
+
+   backend/utils/mercadopago-client.ts (7 problemas):
+     1. Linha 112: [throw error] throw new Error(`MercadoPago API Error: ${response.status} - ${JSON.stringify(errorData)}`)
+     2. Linha 158: [throw error] throw new Error(`MercadoPago Preference API Error: ${response.status} - ${JSON.stringify(errorData)}`)
+     3. Linha 173: [throw error] throw new Error(`Failed to get payment status: ${response.status}`)
+     4. Linha 226: [throw error] throw new Error(`Failed to process webhook notification: ${response.status}`)
+     5. Linha 242: [console.error] console.error('MercadoPago connection test failed:', error)
+     6. Linha 263: [console.log] console.log('MercadoPago configuration not found or inactive')
+     7. Linha 276: [console.error] console.error('Error fetching MercadoPago config:', error)
+
+   backend/utils/notification-helper.ts (6 problemas):
+     1. Linha 16: [console.log] console.log('📧 [NOTIFICATION] Enviando notificação para SUPERADMIN:', data.title)
+     2. Linha 26: [console.error] console.error('❌ [NOTIFICATION] Erro ao buscar superadmins:', superAdminError)
+     3. Linha 31: [console.log] console.log('⚠️ [NOTIFICATION] Nenhum superadmin encontrado')
+     4. Linha 53: [console.error] console.error('❌ [NOTIFICATION] Erro ao inserir notificações:', insertError)
+     5. Linha 57: [console.log] console.log(`✅ [NOTIFICATION] ${notifications.length} notificações enviadas para superadmins`)
+     6. Linha 61: [console.error] console.error('❌ [NOTIFICATION] Erro geral:', error.message)
+
+   backend/utils/pagbank-client.ts (4 problemas):
+     1. Linha 115: [throw error] throw new Error(`PagBank API Error: ${error.error_messages?.[0]?.description || 'Unknown error'}`)
+     2. Linha 133: [throw error] throw new Error(`PagBank API Error: ${error.error_messages?.[0]?.description || 'Payment not found'}`)
+     3. Linha 170: [throw error] throw new Error('Failed to process webhook notification')
+     4. Linha 225: [console.error] console.error('Error getting PagBank config:', error)
+
+   backend/utils/plan-validation.ts (2 problemas):
+     1. Linha 145: [console.error] console.error('Erro na validação do plano:', error)
+     2. Linha 198: [console.error] console.error('Erro ao obter informações do plano:', error)
+
+   backend/utils/redis.ts (6 problemas):
+     1. Linha 32: [console.error] console.error('Error parsing REDIS_URL:', error)
+     2. Linha 61: [console.log] console.log('Redis connected successfully!')
+     3. Linha 65: [console.error] console.error('Redis connection error:', error)
+     4. Linha 69: [console.log] console.log('Redis is ready to receive commands')
+     5. Linha 73: [console.log] console.log('Redis connection closed')
+     6. Linha 110: [console.error] console.error('Redis health check failed:', error)
+
+   backend/utils/supabase-auth.ts (1 problemas):
+     1. Linha 35: [console.error] console.error('Supabase token validation failed:', error)
+
+
+🔧 VERIFICAÇÃO DE ARQUIVOS DE CONFIGURAÇÃO:
+=============================================
+✅ ./backend/nuxt.config.ts - Existe
+✅ ./backend/package.json - Existe
+   ✅ JSON válido
+✅ ./backend/tsconfig.json - Existe
+   ✅ JSON válido
+✅ ./.env.production - Existe
+
+🌐 VERIFICAÇÃO DE ESTRUTURA DE APIs:
+===================================
+📁 /admin/
+   🔗 GET /admin/cart
+📁 /admin/domains/
+📁 /admin/domains/[id]/
+   🔗 GET /admin/domains/[id]/analytics
+   🔗 DELETE /admin/domains/[id]
+   🔗 GET /admin/domains/[id]
+   🔗 PATCH /admin/domains/[id]
+   🔗 GET /admin/domains
+📁 /admin/notifications/
+   🔗 POST /admin/notifications/mark-read
+   🔗 GET /admin/notifications
+📁 /admin/payments/
+📁 /admin/payments/[id]/
+   🔗 POST /admin/payments/confirm-pix
+   🔗 POST /admin/payments/create
+   🔗 POST /admin/payments/pix
+   🔗 GET /admin/payments
+   🔗 GET /admin/profile
+   🔗 PUT /admin/profile
+📁 /admin/transactions/
+   🔗 DELETE /admin/transactions/[id]
+   🔗 GET /admin/transactions/[id]
+📁 /analytics/
+   🔗 GET /analytics/[domainId]
+   🔗 GET /analytics/access
+   🔗 GET /analytics/bandwidth
+   🔗 GET /analytics/content
+   🔗 GET /analytics/errors
+   🔗 GET /analytics/geo
+   🔗 GET /analytics/metrics
+   🔗 GET /analytics/overview
+   🔗 GET /analytics/performance
+   🔗 GET /analytics/realtime
+   🔗 GET /analytics/requests
+   🔗 GET /analytics/stats
+   🔗 GET /analytics/traffic
+📁 /auth/
+📁 /auth/2fa/
+   🔗 POST /auth/2fa/confirm
+   🔗 POST /auth/2fa/disable
+   🔗 POST /auth/2fa/setup
+   🔗 GET /auth/2fa/status
+   🔗 POST /auth/2fa/verify
+   🔗 POST /auth/login
+   🔗 GET /auth/me
+   🔗 GET /auth/profile
+📁 /cron/
+   🔗 TS /cron/check-expired-domains.ts
+📁 /debug/
+   🔗 GET /debug/config
+   🔗 GET /debug/env
+📁 /domain-status/
+   🔗 GET /domain-status/[domain]
+📁 /domains/
+   🔗 DELETE /domains/[id]
+   🔗 PUT /domains/[id]
+   🔗 GET /domains/index
+   🔗 POST /domains/index
+   🔗 GET /health
+   🔗 GET /metrics
+📁 /payments/
+   🔗 POST /payments/create
+   🔗 GET /payments/history
+   🔗 GET /payments/list
+📁 /payments/mercadopago/
+   🔗 POST /payments/mercadopago/create
+📁 /payments/mercadopago/status/
+   🔗 GET /payments/mercadopago/status/[id]
+   🔗 POST /payments/mercadopago/webhook
+📁 /payments/pagbank/
+   🔗 POST /payments/pagbank/create
+📁 /payments/pagbank/status/
+   🔗 GET /payments/pagbank/status/[id]
+   🔗 POST /payments/pagbank/webhook
+📁 /payments/status/
+   🔗 GET /payments/status/[id]
+   🔗 GET /payments/status/[transactionId]
+   🔗 POST /payments/test-connection
+   🔗 POST /payments/webhook
+📁 /plans/
+   🔗 GET /plans/index
+   🔗 POST /plans/upgrade
+📁 /proxy/
+   🔗 POST /proxy/cdn
+   🔗 POST /proxy/stream
+📁 /settings/
+   🔗 GET /settings/platform-name
+   🔗 POST /settings/platform-name
+📁 /streaming/
+   🔗 POST /streaming/hls-playlist
+   🔗 POST /streaming/hls-segment
+   🔗 GET /streaming/queue-status
+📁 /superadmin/
+📁 /superadmin/2fa/
+   🔗 POST /superadmin/2fa/backup-codes
+   🔗 POST /superadmin/2fa/disable
+   🔗 POST /superadmin/2fa/setup
+   🔗 POST /superadmin/2fa/verify
+   🔗 GET /superadmin/admins
+   🔗 POST /superadmin/admins
+   🔗 GET /superadmin/analytics
+📁 /superadmin/domains/
+📁 /superadmin/domains/[id]/
+   🔗 GET /superadmin/domains/[id]/analytics
+   🔗 PUT /superadmin/domains/[id]/renew
+   🔗 PUT /superadmin/domains/[id]/status
+   🔗 DELETE /superadmin/domains
+   🔗 GET /superadmin/domains
+   🔗 POST /superadmin/domains
+   🔗 PUT /superadmin/domains
+📁 /superadmin/ip-cache/
+   🔗 DELETE /superadmin/ip-cache/[ip]
+   🔗 POST /superadmin/ip-cache/clear-expired
+   🔗 GET /superadmin/ip-cache
+📁 /superadmin/monitoring/
+📁 /superadmin/monitoring/api-keys/
+   🔗 DELETE /superadmin/monitoring/api-keys/[id]
+   🔗 GET /superadmin/monitoring/api-keys
+   🔗 POST /superadmin/monitoring/api-keys
+📁 /superadmin/monitoring-servers/
+   🔗 DELETE /superadmin/monitoring-servers/[id]
+   🔗 GET /superadmin/monitoring-servers
+   🔗 POST /superadmin/monitoring-servers
+📁 /superadmin/notifications/
+   🔗 POST /superadmin/notifications/mark-read
+   🔗 GET /superadmin/notifications
+📁 /superadmin/payments/
+   🔗 DELETE /superadmin/payments/[id]
+   🔗 GET /superadmin/payments/[id]
+   🔗 GET /superadmin/payments-simple
+   🔗 GET /superadmin/payments
+   🔗 GET /superadmin/performance
+   🔗 GET /superadmin/pix-config
+   🔗 POST /superadmin/pix-config
+📁 /superadmin/plans/
+   🔗 DELETE /superadmin/plans/[id]
+   🔗 GET /superadmin/plans/[id]
+   🔗 PUT /superadmin/plans/[id]
+   🔗 GET /superadmin/plans
+   🔗 POST /superadmin/plans
+   🔗 GET /superadmin/profile
+   🔗 PUT /superadmin/profile
+📁 /superadmin/reports/
+   🔗 POST /superadmin/reports/generate
+   🔗 GET /superadmin/reports
+   🔗 GET /superadmin/security-logs
+   🔗 GET /superadmin/security-stats
+📁 /superadmin/servers/
+   🔗 DELETE /superadmin/servers/[id]
+   🔗 PUT /superadmin/servers/[id]
+   🔗 POST /superadmin/servers/health-check
+   🔗 GET /superadmin/servers
+   🔗 POST /superadmin/servers
+   🔗 GET /superadmin/stats
+📁 /superadmin/system/
+   🔗 GET /superadmin/system/services
+   🔗 GET /superadmin/system-health
+   🔗 GET /superadmin/system-logs
+   🔗 GET /superadmin/system-stats
+   🔗 GET /superadmin/traffic-stats
+   🔗 GET /superadmin/traffic
+📁 /superadmin/users/
+📁 /superadmin/users/[id]/
+   🔗 PUT /superadmin/users/[id]/toggle-status
+   🔗 DELETE /superadmin/users/[id]
+   🔗 PUT /superadmin/users/[id]
+   🔗 GET /superadmin/users
+   🔗 POST /superadmin/users
+📁 /system/
+   🔗 GET /system/alerts
+   🔗 POST /system/analyze
+   🔗 GET /system/audit
+   🔗 GET /system/background-tasks
+   🔗 POST /system/background-tasks
+📁 /system/backup/
+   🔗 GET /system/backup/download
+   🔗 GET /system/backup
+   🔗 POST /system/backup
+   🔗 POST /system/cleanup-logs
+   🔗 POST /system/cleanup
+   🔗 POST /system/clear-cache
+   🔗 GET /system/database
+   🔗 GET /system/health
+   🔗 POST /system/maintenance
+   🔗 GET /system/monitoring
+   🔗 POST /system/optimize
+   🔗 POST /system/query
+   🔗 POST /system/restart
+   🔗 GET /system/security-logs
+   🔗 GET /system/settings
+   🔗 POST /system/settings
+   🔗 POST /system/test-email
+📁 /test/
+   🔗 POST /test/access-logs
+   🔗 POST /test/geolocation
+   🔗 GET /test/profile
+   🔗 GET /test-geolocation
+   🔗 GET /test-ip
+   🔗 GET /users
+
+✅ Análise concluída!

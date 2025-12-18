@@ -1,207 +1,310 @@
-"use client";
-import { useEffect, useState } from 'react';
-import { Card, Typography, List, ListItem, ListItemText, Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, Snackbar, Alert } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { formatDateToSaoPaulo } from '../../../utils/formatDate';
-// Substituir Snackbar por react-toastify
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+"use client"
 
-// Defina a interface do domínio incluindo expiration
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
+import { API_BASE_URL } from "@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { IconShoppingCart, IconEdit, IconTrash, IconRefresh } from "@tabler/icons-react"
+
 interface Domain {
-  id: string;
-  name: string;
-  status: string;
-  expiration?: string;
-  targetUrl?: string;
-  type?: string;
+    id: number
+    name: string
+    dominio: string
+    expired_at: string
+    target_url: string
+    active: boolean
 }
 
 export default function AdminDomainsPage() {
-  const [loading, setLoading] = useState(true);
-  const [domains, setDomains] = useState<Domain[]>([]);
-  const [editDomain, setEditDomain] = useState<Domain | null>(null);
-  const [editUrl, setEditUrl] = useState('');
-  const [editType, setEditType] = useState('proxy');
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success'|'error'>('success');
-  const [editOpen, setEditOpen] = useState(false);
+    const [domains, setDomains] = useState<Domain[]>([])
+    const [loading, setLoading] = useState(true)
 
-  const showSnackbar = (message: string, severity: 'success'|'error' = 'success') => {
-    setSnackbarMessage(message);
-    setSnackbarSeverity(severity);
-    setSnackbarOpen(true);
-  };
+    // Edit Modal State
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [editingDomain, setEditingDomain] = useState<Domain | null>(null)
+    const [newTargetUrl, setNewTargetUrl] = useState("")
 
-  const handleEditClick = (domain: Domain) => {
-    setEditDomain(domain);
-    setEditUrl(domain.targetUrl || '');
-    setEditType(domain.type || 'proxy');
-    setEditOpen(true);
-  };
+    // Delete Modal State
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+    const [deletingDomain, setDeletingDomain] = useState<Domain | null>(null)
 
-  // Remover Snackbar/Alert
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    if (type === 'success') toast.success(message);
-    else toast.error(message);
-  };
+    const getAuthToken = () => document.cookie.split("; ").find((row) => row.startsWith("access_token="))?.split("=")[1]
 
-  const handleEdit = (domain: Domain) => {
-    setEditDomain(domain);
-    setEditUrl(domain.targetUrl || '');
-    setEditType(domain.type || 'proxy');
-    setEditOpen(true);
-  };
+    const fetchDomains = async () => {
+        setLoading(true)
+        const token = getAuthToken()
 
-  const handleRenew = async (domain: Domain) => {
-    try {
-      window.location.href = `/admin/cart?renew=${domain.id}`;
-    } catch {
-      showToast('Erro ao redirecionar para renovação.', 'error');
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/domains`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            if (res.ok) {
+                const data = await res.json()
+                setDomains(data || [])
+            } else {
+                toast.error("Erro ao carregar domínios")
+            }
+        } catch (error) {
+            toast.error("Erro de conexão")
+        } finally {
+            setLoading(false)
+        }
     }
-  };
 
-  const handleToggleStatus = async (domain: Domain) => {
-    try {
-      await fetch(`/api/admin/domains/${domain.id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: domain.status === 'active' ? 'inactive' : 'active' }),
-      });
-      showToast(`Domínio ${domain.status === 'active' ? 'desativado' : 'ativado'} com sucesso!`, 'success');
-      fetch('/api/admin/domains')
-        .then(res => res.json())
-        .then(data => setDomains(data.domains || []));
-    } catch {
-      showToast('Erro ao alterar status do domínio.', 'error');
+    useEffect(() => {
+        fetchDomains()
+    }, [])
+
+    const handleRenew = async (domain: Domain) => {
+        const token = getAuthToken()
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/cart`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    product_type: "domain_renewal",
+                    product_identifier: domain.id.toString(),
+                    price: 29.90
+                })
+            })
+
+            if (res.ok) {
+                toast.success("Adicionado ao carrinho!")
+                // Opcional: Redirecionar para o carrinho ou abrir um modal
+            } else {
+                toast.error("Erro ao adicionar ao carrinho")
+            }
+        } catch (error) {
+            toast.error("Erro de conexão")
+        }
     }
-  };
 
-  const handleDelete = async (domain: Domain) => {
-    try {
-      await fetch(`/api/admin/domains/${domain.id}`, { method: 'DELETE' });
-      showToast('Domínio excluído com sucesso!', 'success');
-      setDomains(domains.filter((d: Domain) => d.id !== domain.id));
-    } catch {
-      showToast('Erro ao excluir domínio.', 'error');
+    const openEditModal = (domain: Domain) => {
+        setEditingDomain(domain)
+        setNewTargetUrl(domain.target_url)
+        setIsEditOpen(true)
     }
-  };
 
-  const handleEditSave = () => {
-    // Aqui você pode adicionar a lógica para salvar a edição do domínio
-    setEditOpen(false);
-    showToast('Domínio editado com sucesso!', 'success');
-  };
+    const handleSaveEdit = async () => {
+        if (!editingDomain) return
 
-  // Definição das colunas para o DataGrid
-  const tableColumns = [
-    { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'name', headerName: 'Domínio', width: 200 },
-    { field: 'status', headerName: 'Status', width: 150 },
-    {
-      field: 'actions',
-      headerName: 'Ações',
-      width: 260,
-      renderCell: (params: any) => {
-        const domain = domains.find((d: Domain) => d.id === params.row.id);
-        const expired = !!(domain && domain.expiration && new Date(domain.expiration) < new Date());
-        return (
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button variant="outlined" size="small" disabled={expired} onClick={() => handleEdit(domain!)}>Editar</Button>
-            <Button variant="outlined" size="small" onClick={() => handleRenew(domain!)}>Renovar</Button>
-            <Button variant="outlined" size="small" onClick={() => handleToggleStatus(domain!)}>{domain?.status === 'active' ? 'Desativar' : 'Ativar'}</Button>
-            <Button variant="outlined" size="small" color="error" onClick={() => handleDelete(domain!)}>Excluir</Button>
-          </Box>
-        );
-      }
+        const token = getAuthToken()
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/domains/${editingDomain.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ target_url: newTargetUrl })
+            })
+
+            if (res.ok) {
+                toast.success("Domínio atualizado!")
+                fetchDomains() // Refresh list
+                setIsEditOpen(false)
+            } else {
+                const err = await res.text()
+                toast.error(`Erro ao atualizar: ${err}`)
+            }
+        } catch (error) {
+            toast.error("Erro de conexão")
+        }
     }
-  ];
 
-  // Adaptação dos dados para o DataGrid
-  const tableData = domains.map((domain: Domain) => ({
-    id: domain.id,
-    name: domain.name,
-    status: domain.status,
-    actions: ''
-  }));
+    const openDeleteModal = (domain: Domain) => {
+        setDeletingDomain(domain)
+        setIsDeleteOpen(true)
+    }
 
-  return (
-    <>
-      <Card sx={{ p: 4 }}>
-        <Typography variant="h5">Gerenciamento de Domínios (Admin)</Typography>
-        {loading ? (
-          <Typography variant="body1">Carregando...</Typography>
-        ) : (
-          <List>
-            {domains.length === 0 ? (
-              <ListItem><ListItemText primary="Nenhum domínio encontrado." /></ListItem>
-            ) : (
-              domains.map((domain: Domain) => (
-                <ListItem key={domain.id}>
-                  <ListItemText primary={domain.name} secondary={domain.status} />
-                </ListItem>
-              ))
-            )}
-          </List>
-        )}
-      </Card>
-      <DataGrid
-        rows={tableData}
-        columns={tableColumns}
-        autoHeight
-        sx={{
-          bgcolor: '#18181b',
-          color: '#fff',
-          borderRadius: 3,
-          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-          '& .MuiDataGrid-row:hover': {
-            backgroundColor: '#23232b',
-          },
-        }}
-        initialState={{ pagination: { pageSize: 20 } }}
-        pagination
-        loading={loading}
-      />
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)}>
-        <DialogTitle>Editar Domínio</DialogTitle>
-        <DialogContent>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            O sistema automaticamente identifica se vai ser Proxy Reverso/Redirecionamento.
-          </Alert>
-          <TextField
-            label="URL de Destino"
-            fullWidth
-            margin="normal"
-            value={editUrl}
-            onChange={e => setEditUrl(e.target.value)}
-          />
-          <Select
-            label="Tipo"
-            fullWidth
-            value={editType}
-            onChange={e => setEditType(e.target.value)}
-            sx={{ mt: 2 }}
-            disabled
-          >
-            <MenuItem value="proxy">Proxy Reverso</MenuItem>
-            <MenuItem value="redirect">Redirecionamento 301</MenuItem>
-          </Select>
-          <Typography variant="body2" color="warning.main" sx={{ mt: 2 }}>
-            O tipo de entrega (Proxy/Redirecionamento) é definido automaticamente pelo sistema. Para alterar, entre em contato com o suporte.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditOpen(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={handleEditSave}>Salvar</Button>
-        </DialogActions>
-      </Dialog>
-      <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)}>
-        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
-      <ToastContainer />
-    </>
-  );
+    const confirmDelete = async () => {
+        if (!deletingDomain) return
+        const token = getAuthToken()
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/domains/${deletingDomain.id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            })
+
+            if (res.ok) {
+                toast.success("Domínio excluído!")
+                fetchDomains()
+            } else {
+                toast.error("Erro ao excluir domínio")
+            }
+        } catch (error) {
+            toast.error("Erro de conexão")
+        } finally {
+            setIsDeleteOpen(false)
+            setDeletingDomain(null)
+        }
+    }
+
+    const isExpired = (dateString: string) => {
+        return new Date(dateString) < new Date()
+    }
+
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+        }).format(value)
+    }
+
+    return (
+        <div className="flex-1 space-y-4 p-8 pt-6">
+            <div className="flex items-center justify-between space-y-2">
+                <h2 className="text-3xl font-bold tracking-tight">Meus Domínios</h2>
+                <Button onClick={() => window.location.href = "/admin/cart"}>
+                    <IconShoppingCart className="mr-2 h-4 w-4" /> Ver Carrinho
+                </Button>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Gerenciar Assinaturas</CardTitle>
+                    <CardDescription>Renove seus domínios para manter o serviço ativo.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Domínio</TableHead>
+                                <TableHead>URL de Destino</TableHead>
+                                <TableHead>Expira em</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Ações</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center h-24">Carregando...</TableCell>
+                                </TableRow>
+                            ) : domains.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center h-24">Nenhum domínio encontrado.</TableCell>
+                                </TableRow>
+                            ) : (
+                                domains.map((domain) => {
+                                    const expired = isExpired(domain.expired_at)
+                                    return (
+                                        <TableRow key={domain.id}>
+                                            <TableCell className="font-medium">{domain.name}</TableCell>
+                                            <TableCell className="text-muted-foreground truncate max-w-[200px]">{domain.target_url}</TableCell>
+                                            <TableCell>
+                                                {new Date(domain.expired_at).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell>
+                                                {domain.active && !expired ? (
+                                                    <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Ativo</span>
+                                                ) : (
+                                                    <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">Inativo/Expirado</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-right space-x-2">
+                                                <Button size="sm" variant="outline" onClick={() => openEditModal(domain)} disabled={expired}>
+                                                    <IconEdit className="mr-2 h-4 w-4" />
+                                                    Editar
+                                                </Button>
+                                                <Button size="sm" variant="default" onClick={() => handleRenew(domain)}>
+                                                    <IconRefresh className="mr-2 h-4 w-4" />
+                                                    Renovar
+                                                </Button>
+                                                <Button size="sm" variant="destructive" onClick={() => openDeleteModal(domain)}>
+                                                    <IconTrash className="mr-2 h-4 w-4" />
+                                                    Excluir
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            {/* Edit Modal */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Editar Domínio</DialogTitle>
+                        <DialogDescription>
+                            Altere a URL de destino para {editingDomain?.name}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="target_url" className="text-right">
+                                URL de Destino
+                            </Label>
+                            <Input
+                                id="target_url"
+                                value={newTargetUrl}
+                                onChange={(e) => setNewTargetUrl(e.target.value)}
+                                className="col-span-3"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleSaveEdit}>Salvar</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation */}
+            <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. Isso excluirá permanentemente o domínio
+                            <span className="font-bold"> {deletingDomain?.name} </span> e removerá seus dados de nossos servidores.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+                            Excluir Domínio
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+    )
 }

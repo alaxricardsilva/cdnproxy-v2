@@ -1,354 +1,347 @@
-"use client";
-import { useEffect, useState } from "react";
-import { Card, Typography, Button, Snackbar, Alert, CircularProgress, List, ListItem, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, MenuItem } from "@mui/material";
-import { Edit, Delete, ToggleOn, ToggleOff } from '@mui/icons-material';
-import { useRouter } from "next/navigation";
-import { createClient } from "../../../../utils/supabase/client";
-// Substituir Snackbar por react-toastify
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { DataGrid } from '@mui/x-data-grid';
+"use client"
 
-export interface User {
-  id: string;
-  email?: string;
-  name?: string;
-  company?: string;
-  whatsapp?: string;
-  role?: string;
-  status?: string;
-  banned?: boolean;
-  [key: string]: any;
+import * as React from "react"
+import {
+    ColumnDef,
+    ColumnFiltersState,
+    SortingState,
+    VisibilityState,
+    flexRender,
+    getCoreRowModel,
+    getFilteredRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable,
+} from "@tanstack/react-table"
+import { ArrowUpDown, MoreHorizontal, Plus } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import { API_BASE_URL } from "@/lib/api"
+import { Badge } from "@/components/ui/badge"
+import { UserDialog } from "@/components/superadmin/user-dialog"
+import { toast } from "sonner"
+
+export type User = {
+    id: number
+    email: string
+    name?: string
+    role: number
+    active: boolean
+    created_at: string
 }
 
-export default function SuperAdminUsers() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState<{
-    email?: string;
-    password?: string;
-    name?: string;
-    company?: string;
-    whatsapp?: string;
-    role?: string;
-    status?: string;
-    id?: string;
-  }>({});
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success'|'error'>("success");
-  const router = useRouter();
+export default function UsersPage() {
+    const [data, setData] = React.useState<User[]>([])
+    const [loading, setLoading] = React.useState(true)
+    const [sorting, setSorting] = React.useState<SortingState>([])
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+    const [rowSelection, setRowSelection] = React.useState({})
 
-  useEffect(() => {
-    // Verifica sessão via Supabase Auth
-    createClient().auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push("/auth/login");
-      }
-    });
-  }, [router]);
+    // Dialog State
+    const [isDialogOpen, setIsDialogOpen] = React.useState(false)
+    const [editingUser, setEditingUser] = React.useState<User | null>(null)
 
-  useEffect(() => {
-    // Listar usuários via Supabase Admin API
-    async function fetchUsers() {
-      setLoading(true);
-      try {
-        const supabase = createClient();
-        // Busca usuários do Supabase Auth
-        const { data, error } = await supabase.auth.admin.listUsers();
-        if (error) throw error;
-        setUsers(data.users || []);
-      } catch (err) {
-        setSnackbarMessage("Erro ao carregar usuários.");
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
-      }
-      setLoading(false);
-    }
-    fetchUsers();
-  }, []);
+    const fetchUsers = React.useCallback(async () => {
+        setLoading(true)
+        const token = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("access_token="))
+            ?.split("=")[1]
 
-  const handleSaveUser = async () => {
-    try {
-      const supabase = createClient();
-      let result;
-      if (editMode && selectedUser) {
-        // Editar usuário
-        result = await supabase.auth.admin.updateUserById(selectedUser.id, {
-          email: formData.email,
-          user_metadata: {
-            name: formData.name,
-            company: formData.company,
-            whatsapp: formData.whatsapp,
-            role: formData.role
-          }
-        });
-      } else if (!editMode) {
-        // Criar usuário
-        result = await supabase.auth.admin.createUser({
-          email: formData.email,
-          password: formData.password,
-          user_metadata: {
-            name: formData.name,
-            company: formData.company,
-            whatsapp: formData.whatsapp,
-            role: formData.role
-          }
-        });
-      }
-      if (result.error) throw result.error;
-      setSnackbarMessage(editMode ? "Editado com sucesso." : "Criado com sucesso.");
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
-      setModalOpen(false);
-      // Atualiza tabela
-      const { data } = await supabase.auth.admin.listUsers();
-      setUsers(data.users || []);
-    } catch {
-      setSnackbarMessage("Erro ao salvar usuário.");
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
-    }
-  };
+        if (!token) return
 
-  const handleToggleStatus = async (user: any) => {
-    try {
-      const supabase = createClient();
-      // Ativar/desativar usuário
-      const result = await supabase.auth.admin.updateUserById(user.id, {
-        user_metadata: {
-          ...user.user_metadata,
-          status: user.status === 'Ativo' ? 'Inativo' : 'Ativo'
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/superadmin/users`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            if (res.ok) {
+                const json = await res.json()
+                setData(json || [])
+            } else {
+                console.error("Failed to fetch users:", res.status, res.statusText)
+                toast.error("Falha ao carregar usuários.")
+            }
+        } catch (e) {
+            console.error("Failed to fetch users", e)
+            toast.error("Erro ao carregar usuários")
+        } finally {
+            setLoading(false)
         }
-      });
-      if (result.error) throw result.error;
-      setSnackbarMessage("Status alterado.");
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
-      const { data } = await supabase.auth.admin.listUsers();
-      setUsers(data.users || []);
-    } catch {
-      setSnackbarMessage("Erro ao alterar status.");
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+    }, [])
+
+    // Inicial Fetch
+    React.useEffect(() => {
+        fetchUsers()
+    }, [fetchUsers])
+
+    const handleCreate = () => {
+        setEditingUser(null)
+        setIsDialogOpen(true)
     }
-  };
 
-  const handleDeleteUser = async (user: any) => {
-    if (!window.confirm('Deseja realmente excluir este usuário?')) return;
-    try {
-      const supabase = createClient();
-      const result = await supabase.auth.admin.deleteUser(user.id);
-      if (result.error) throw result.error;
-      setSnackbarMessage("Usuário excluído.");
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
-      const { data } = await supabase.auth.admin.listUsers();
-      setUsers(data.users || []);
-    } catch {
-      setSnackbarMessage("Erro ao excluir usuário.");
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+    const handleEdit = (user: User) => {
+        setEditingUser(user)
+        setIsDialogOpen(true)
     }
-  };
 
-  // Removido: funções duplicadas e não utilizadas (selectedUser, formData, handleOpenModal, handleCloseModal, handleFormChange, tableColumns, tableData, handleSaveUser, handleToggleStatus, handleDeleteUser, showToast) do final do arquivo
-  const handleOpenModal = (user?: any) => {
-    if (user) {
-      setEditMode(true);
-      setSelectedUser(user);
-      setFormData({ ...user });
-    } else {
-      setEditMode(false);
-      setSelectedUser(null);
-      setFormData({});
+    const handleToggleStatus = async (user: User) => {
+        const action = user.active ? "deactivate" : "activate"
+        const confirmMsg = user.active ? "Desativar usuário?" : "Ativar usuário?"
+        if (!confirm(confirmMsg)) return
+
+        const token = document.cookie.split("; ").find(row => row.startsWith("access_token="))?.split("=")[1]
+        if (!token) return
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/superadmin/users/${user.id}/${action}`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            })
+
+            if (res.ok) {
+                toast.success(`Usuário ${user.active ? "desativado" : "ativado"} com sucesso`)
+                fetchUsers()
+            } else {
+                toast.error("Falha ao alterar status")
+            }
+        } catch (err) {
+            toast.error("Erro de conexão")
+        }
     }
-    setModalOpen(true);
-  };
 
-  // Função para fechar o modal de usuário
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    setEditMode(false);
-    setSelectedUser(null);
-    setFormData({});
-  };
+    const columns: ColumnDef<User>[] = React.useMemo(() => [
+        {
+            id: "select",
+            header: ({ table }) => (
+                <Checkbox
+                    checked={
+                        table.getIsAllPageRowsSelected() ||
+                        (table.getIsSomePageRowsSelected() && "indeterminate")
+                    }
+                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    aria-label="Select all"
+                />
+            ),
+            cell: ({ row }) => (
+                <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
+            accessorKey: "name",
+            header: "Nome",
+            cell: ({ row }) => <div className="font-medium">{row.getValue("name") || "-"}</div>,
+        },
+        {
+            accessorKey: "email",
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        Email
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                )
+            },
+            cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>,
+        },
+        {
+            accessorKey: "role",
+            header: "Role",
+            cell: ({ row }) => {
+                const role = row.getValue("role") as number
+                return (
+                    <Badge variant={role === 1 ? "default" : "secondary"}>
+                        {role === 1 ? "Superadmin" : "Admin"}
+                    </Badge>
+                )
+            },
+        },
+        {
+            accessorKey: "active",
+            header: "Status",
+            cell: ({ row }) => {
+                const active = row.original.active
+                return (
+                    <Badge variant={active ? "outline" : "destructive"} className={active ? "text-green-600 border-green-600" : ""}>
+                        {active ? "Ativo" : "Inativo"}
+                    </Badge>
+                )
+            }
+        },
+        {
+            id: "actions",
+            enableHiding: false,
+            cell: ({ row }) => {
+                const user = row.original
 
-  // Função para atualizar os dados do formulário
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+                return (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Abrir menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                            <DropdownMenuItem
+                                onClick={() => navigator.clipboard.writeText(user.email)}
+                            >
+                                Copiar Email
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleEdit(user)}>Editar Usuário</DropdownMenuItem>
+                            <DropdownMenuItem className={user.active ? "text-red-600" : "text-green-600"} onClick={() => handleToggleStatus(user)}>
+                                {user.active ? "Desativar" : "Ativar"}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )
+            },
+        },
+    ], [])
 
-  // Definição das colunas para o DataGrid
-  const tableColumns = [
-    { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'name', headerName: 'Nome', width: 200 },
-    { field: 'email', headerName: 'Email', width: 250 },
-    { field: 'status', headerName: 'Status', width: 150 },
-    {
-      field: 'actions',
-      headerName: 'Ações',
-      width: 220,
-      renderCell: (params: any) => {
-        const user = users.find((u: any) => u.id === params.row.id);
-        if (!user) return null;
-        return (
-          <>
-            <IconButton color="primary" onClick={() => handleOpenModal(user)}>
-              <Edit />
-            </IconButton>
-            <IconButton color={user.status === 'Ativo' ? 'warning' : 'success'} onClick={() => handleToggleStatus(user)}>
-              {user.status === 'Ativo' ? <ToggleOff /> : <ToggleOn />}
-            </IconButton>
-            <IconButton color="error" onClick={() => handleDeleteUser(user)}>
-              <Delete />
-            </IconButton>
-          </>
-        );
-      },
-    },
-  ];
+    const table = useReactTable({
+        data,
+        columns,
+        onSortingChange: setSorting,
+        onColumnFiltersChange: setColumnFilters,
+        getCoreRowModel: getCoreRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        onColumnVisibilityChange: setColumnVisibility,
+        onRowSelectionChange: setRowSelection,
+        state: {
+            sorting,
+            columnFilters,
+            columnVisibility,
+            rowSelection,
+        },
+    })
 
-  // Adaptação dos dados para o DataGrid
-  const tableData = users.map((user: any) => ({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    status: user.status || 'Ativo',
-  }));
-
-  return (
-    <>
-      <Card sx={{ p: 4 }}>
-        <Typography variant="h5">Usuários (Superadmin)</Typography>
-        <Button variant="contained" color="primary" sx={{ mt: 2, mb: 2 }} onClick={() => handleOpenModal()}>
-          Criar Usuário
-        </Button>
-        {loading ? (
-          <Typography variant="body1">Carregando...</Typography>
-        ) : (
-          <List>
-            {users.length === 0 ? (
-              <ListItem><ListItemText primary="Nenhum usuário encontrado." /></ListItem>
-            ) : (
-              users.map((user: any) => (
-                <ListItem key={user.id}>
-                  <ListItemText primary={user.name} secondary={user.email} />
-                </ListItem>
-              ))
-            )}
-          </List>
-        )}
-      </Card>
-      <DataGrid
-        rows={tableData}
-        columns={tableColumns}
-        autoHeight
-        sx={{
-          bgcolor: '#18181b',
-          color: '#fff',
-          borderRadius: 3,
-          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-          '& .MuiDataGrid-row:hover': {
-            backgroundColor: '#23232b',
-          },
-          '& .MuiDataGrid-row.Mui-selected': {
-            backgroundColor: '#00bcd4',
-            color: '#18181b',
-          },
-          '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#23232b',
-            color: '#bdbdbd',
-            fontWeight: 'bold',
-            fontSize: '1rem',
-          },
-          '& .MuiDataGrid-cell': {
-            borderBottom: '1px solid #23232b',
-          },
-        }}
-        initialState={{ pagination: { pageSize: 10, page: 0 } }}
-        pagination
-      />
-      <Dialog open={modalOpen} onClose={handleCloseModal}>
-        <DialogTitle>{editMode ? 'Editar Usuário' : 'Criar Usuário'}</DialogTitle>
-        <DialogContent sx={{ minWidth: 350 }}>
-          <TextField
-            margin="dense"
-            label="Nome"
-            name="name"
-            fullWidth
-            value={formData.name}
-            onChange={handleFormChange}
-          />
-          <TextField
-            margin="dense"
-            label="E-mail"
-            name="email"
-            type="email"
-            fullWidth
-            value={formData.email}
-            onChange={handleFormChange}
-          />
-          <TextField
-            margin="dense"
-            label="Empresa"
-            name="company"
-            fullWidth
-            value={formData.company}
-            onChange={handleFormChange}
-          />
-          <TextField
-            margin="dense"
-            label="WhatsApp"
-            name="whatsapp"
-            fullWidth
-            value={formData.whatsapp}
-            onChange={handleFormChange}
-            inputProps={{ maxLength: 16 }}
-            placeholder="+55 DDD Número"
-          />
-          {!editMode && (
-            <TextField
-              margin="dense"
-              label="Senha"
-              name="password"
-              type="password"
-              fullWidth
-              value={formData.password}
-              onChange={handleFormChange}
+    return (
+        <div className="w-full">
+            <UserDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                userToEdit={editingUser}
+                onSuccess={fetchUsers}
             />
-          )}
-          <TextField
-            margin="dense"
-            label="Role"
-            name="role"
-            select
-            fullWidth
-            value={formData.role || "ADMIN"}
-            onChange={handleFormChange}
-          >
-            <MenuItem value="SUPERADMIN">SUPERADMIN</MenuItem>
-            <MenuItem value="ADMIN">ADMIN</MenuItem>
-          </TextField>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal}>Cancelar</Button>
-          <Button onClick={handleSaveUser} variant="contained" color="primary">
-            Salvar
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
-        message={snackbarMessage}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      />
-      <ToastContainer />
-    </>
-  );
+            <div className="flex items-center py-4 justify-between">
+                <Input
+                    placeholder="Filtrar por email..."
+                    value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
+                    onChange={(event) =>
+                        table.getColumn("email")?.setFilterValue(event.target.value)
+                    }
+                    className="max-w-sm"
+                />
+                <Button onClick={handleCreate}>
+                    <Plus className="mr-2 h-4 w-4" /> Novo Usuário
+                </Button>
+            </div>
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        {table.getHeaderGroups().map((headerGroup) => (
+                            <TableRow key={headerGroup.id}>
+                                {headerGroup.headers.map((header) => {
+                                    return (
+                                        <TableHead key={header.id}>
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                    header.column.columnDef.header,
+                                                    header.getContext()
+                                                )}
+                                        </TableHead>
+                                    )
+                                })}
+                            </TableRow>
+                        ))}
+                    </TableHeader>
+                    <TableBody>
+                        {table.getRowModel().rows?.length ? (
+                            table.getRowModel().rows.map((row) => (
+                                <TableRow
+                                    key={row.id}
+                                    data-state={row.getIsSelected() && "selected"}
+                                >
+                                    {row.getVisibleCells().map((cell) => (
+                                        <TableCell key={cell.id}>
+                                            {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext()
+                                            )}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell
+                                    colSpan={columns.length}
+                                    className="h-24 text-center"
+                                >
+                                    {loading ? "Carregando..." : "Nenhum usuário encontrado."}
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+            <div className="flex items-center justify-end space-x-2 py-4">
+                <div className="flex-1 text-sm text-muted-foreground">
+                    {table.getFilteredSelectedRowModel().rows.length} de{" "}
+                    {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
+                </div>
+                <div className="space-x-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => table.previousPage()}
+                        disabled={!table.getCanPreviousPage()}
+                    >
+                        Anterior
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => table.nextPage()}
+                        disabled={!table.getCanNextPage()}
+                    >
+                        Próximo
+                    </Button>
+                </div>
+            </div>
+        </div>
+    )
 }

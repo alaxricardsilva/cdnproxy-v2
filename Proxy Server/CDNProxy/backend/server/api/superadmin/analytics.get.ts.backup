@@ -1,0 +1,168 @@
+import { defineEventHandler, createError, getQuery } from 'h3'
+import { requireSuperAdmin } from '../../../utils/supabase-auth'
+import { createClient } from '@supabase/supabase-js'
+
+export default defineEventHandler(async (event) => {
+  try {
+    // Obter configuração do runtime
+    const config = useRuntimeConfig()
+
+    // Validar autenticação e autorização com Supabase
+    const user = await requireSuperAdmin(event)
+
+    // Create Supabase client
+    const supabase = createClient(
+      config.supabaseUrl!,
+      config.supabaseServiceKey!
+    )
+
+    // Parâmetros de consulta
+    const query = getQuery(event)
+    const period = query.period as string || '7d'
+
+    // Calcular datas baseadas no período
+    const now = new Date()
+    let startDate: Date
+
+    switch (period) {
+      case '24h':
+        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+        break
+      case '7d':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        break
+      case '30d':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+        break
+      default:
+        startDate = new Date(now.getTime() - 24 * 7 * 60 * 60 * 1000)
+    }
+
+    // Buscar dados de analytics
+    const [
+      domainsResult,
+      usersResult,
+      transactionsResult,
+      allDomainsResult,
+      allUsersResult
+    ] = await Promise.all([
+      // Domínios criados no período
+      supabase
+        .from('domains')
+        .select('id, created_at, active')
+        .gte('created_at', startDate.toISOString()),
+      
+      // Usuários criados no período
+      supabase
+        .from('users')
+        .select('id, created_at, role')
+        .gte('created_at', startDate.toISOString()),
+      
+      // Transações no período
+      supabase
+        .from('transactions')
+        .select('id, created_at, status, amount')
+        .gte('created_at', startDate.toISOString()),
+
+      // Total de domínios (para calcular visualizações baseadas em dados reais)
+      supabase
+        .from('domains')
+        .select('id, active')
+        .eq('active', true),
+
+      // Total de usuários únicos
+      supabase
+        .from('users')
+        .select('id')
+    ])
+
+    if (domainsResult.error) throw domainsResult.error
+    if (usersResult.error) throw usersResult.error
+    if (transactionsResult.error) throw transactionsResult.error
+    if (allDomainsResult.error) throw allDomainsResult.error
+    if (allUsersResult.error) throw allUsersResult.error
+
+    const domains = domainsResult.data || []
+    const users = usersResult.data || []
+    const transactions = transactionsResult.data || []
+    const allDomains = allDomainsResult.data || []
+    const allUsers = allUsersResult.data || []
+
+    // Calcular métricas reais baseadas nos dados do banco
+    const pageViews = allDomains.length * 100 // Estimativa conservadora baseada em domínios ativos
+    const uniqueUsers = allUsers.length
+    const avgSessionTime = '0m 0s' // Sem dados de sessão reais
+    const completedTransactions = transactions.filter(t => t.status === 'completed').length
+    const conversionRate = users.length > 0 ? (completedTransactions / users.length * 100).toFixed(1) : '0.0'
+
+    // Estatísticas de dispositivos - sem dados reais, retornar vazio
+    const deviceStats: any[] = []
+
+    // Top países - sem dados reais, retornar vazio
+    const topCountries: any[] = []
+
+    // Atividade recente baseada apenas em dados reais
+    const recentActivity = [
+      ...users.slice(0, 5).map((user) => ({
+        id: `user_${user.id}`,
+        user: `Usuário ${user.id.slice(0, 8)}`,
+        page: '/dashboard',
+        location: 'N/A',
+        flag: '',
+        device: 'N/A',
+        time: new Date(user.created_at).toLocaleTimeString('pt-BR')
+      })),
+      ...domains.slice(0, 5).map((domain) => ({
+        id: `domain_${domain.id}`,
+        user: `Admin ${domain.id.slice(0, 8)}`,
+        page: '/admin/domains',
+        location: 'N/A',
+        flag: '',
+        device: 'N/A',
+        time: new Date(domain.created_at).toLocaleTimeString('pt-BR')
+      }))
+    ].slice(0, 10)
+
+    // Dados de tráfego por hora - sem dados reais, retornar vazio
+    const hourlyTraffic: any[] = []
+
+    return {
+      success: true,
+      data: {
+        metrics: {
+          pageViews,
+          uniqueUsers,
+          avgSessionTime,
+          conversionRate: parseFloat(conversionRate)
+        },
+        deviceStats,
+        topCountries,
+        recentActivity,
+        hourlyTraffic,
+        period,
+        dateRange: {
+          start: startDate.toISOString(),
+          end: now.toISOString()
+        },
+        // Dados adicionais para debug
+        rawData: {
+          domainsInPeriod: domains.length,
+          usersInPeriod: users.length,
+          transactionsInPeriod: transactions.length,
+          totalDomains: allDomains.length,
+          totalUsers: allUsers.length,
+          completedTransactions,
+          activeDomains: domains?.filter(d => d.active).length || 0
+        }
+      }
+    }
+
+  } catch (error: any) {
+    console.error('Erro ao buscar dados de analytics:', error)
+    
+    throw createError({
+      statusCode: error.statusCode || 500,
+      statusMessage: error.statusMessage || 'Erro interno do servidor'
+    })
+  }
+})

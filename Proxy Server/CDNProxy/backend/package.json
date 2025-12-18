@@ -1,0 +1,45 @@
+{
+  "name": "cdnproxy-backend",
+  "version": "1.2.7",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.19.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev --port 5001",
+    "preview": "nuxt preview --port 5001",
+    "postinstall": "nuxt prepare",
+    "start": "node start-with-env.js",
+    "start:direct": "PORT=5001 node .output/server/index.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.74.0",
+    "@types/ioredis": "^4.28.10",
+    "@types/qrcode": "^1.5.5",
+    "bcryptjs": "^2.4.3",
+    "diskusage": "^1.2.0",
+    "dotenv": "^17.2.3",
+    "ioredis": "^5.8.1",
+    "jose": "^5.9.6",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^4.2.1",
+    "node-fetch": "^2.7.0",
+    "nuxt": "^4.1.2",
+    "qrcode": "^1.5.4",
+    "redis": "^4.7.0",
+    "speakeasy": "^2.0.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^1.6.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.10.2",
+    "@types/speakeasy": "^2.0.10",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "^5.7.2"
+  }
+}

@@ -6,22 +6,19 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - ./frontend/.env.local
+      - ./frontend/.env
     environment:
-      - FRONTEND_URL=https://app.cdnproxy.top
-    command: "npm run start"
+      - FRONTEND_URL=http://localhost:3000
+      - NUXT_PUBLIC_API_BASE=http://localhost:8080
+    command: "npm run dev"
     networks:
       - cdnproxy_net
 
-  proxy-server:
-    build: ./proxy-server
-    container_name: proxy-server
+  backend:
+    build: ./backend
+    container_name: backend
     env_file:
-      - ./proxy-server/.env
-    environment:
-      - NODE_ENV=production
-      - PORT=8080
-    command: npm start
+      - ./backend/.env
     ports:
       - "8080:8080"
     networks:

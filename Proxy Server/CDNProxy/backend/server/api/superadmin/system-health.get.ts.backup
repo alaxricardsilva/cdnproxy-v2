@@ -1,0 +1,291 @@
+import { createClient } from '@supabase/supabase-js'
+import { defineEventHandler, createError, getHeader } from 'h3'
+import * as os from 'os'
+
+interface ServerStatus {
+  name: string
+  status: 'active' | 'inactive' | 'error' | 'unknown'
+  type: 'database' | 'api' | 'proxy' | 'cache'
+  responseTime?: number
+  uptime?: number
+  lastActivity?: string
+  error?: string
+  note?: string
+}
+
+interface SystemAlert {
+  level: 'critical' | 'warning' | 'info'
+  message: string
+  type: 'memory' | 'cpu' | 'domains' | 'system'
+  timestamp: string
+  details?: any
+}
+
+export default defineEventHandler(async (event) => {
+  try {
+    // Obter configuração do runtime
+    const config = useRuntimeConfig()
+
+    // Get user from headers
+    const authHeader = getHeader(event, 'authorization')
+    if (!authHeader) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token de autenticação necessário'
+      })
+    }
+
+    // Initialize Supabase client
+    const supabase = createClient(
+      config.supabaseUrl!,
+      config.supabaseServiceKey!
+    )
+
+    // Verify JWT token and check superadmin role
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+    if (authError || !user) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token inválido'
+      })
+    }
+
+    // Check if user has superadmin privileges
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('email', user.email)
+      .single()
+
+    if (!profile || profile.role !== 'SUPERADMIN') {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Acesso negado'
+      })
+    }
+
+    // Get system health metrics
+    const memoryUsage = process.memoryUsage()
+    const loadAverage = os.loadavg()
+    const uptime = process.uptime()
+    const totalMemory = os.totalmem()
+    const freeMemory = os.freemem()
+    const usedMemory = totalMemory - freeMemory
+    const memoryPercentage = Math.round((usedMemory / totalMemory) * 100)
+
+    // Calculate CPU usage percentage (approximation based on load average)
+    const cpuCores = os.cpus().length
+    const cpuUsagePercentage = Math.min(Math.round((loadAverage[0] / cpuCores) * 100), 100)
+
+    // Check active services/servers
+    const activeServers = await checkActiveServers(supabase)
+    
+    // Check for system alerts
+    const alerts = await checkSystemAlerts(supabase, memoryPercentage, cpuUsagePercentage)
+
+    const systemHealth = {
+      cpu: cpuUsagePercentage,
+      memory: memoryPercentage,
+      servers: activeServers.count,
+      alerts: alerts.length,
+      uptime: Math.floor(uptime),
+      loadAverage: loadAverage[0],
+      details: {
+        memory: {
+          total: totalMemory,
+          used: usedMemory,
+          free: freeMemory,
+          process: {
+            heapUsed: memoryUsage.heapUsed,
+            heapTotal: memoryUsage.heapTotal,
+            external: memoryUsage.external,
+            rss: memoryUsage.rss
+          }
+        },
+        cpu: {
+          cores: cpuCores,
+          loadAverage: loadAverage,
+          platform: os.platform(),
+          arch: os.arch()
+        },
+        servers: activeServers.details,
+        alerts: alerts
+      }
+    }
+
+    return {
+      success: true,
+      data: systemHealth,
+      timestamp: new Date().toISOString()
+    }
+
+  } catch (error: any) {
+    if (error.statusCode) {
+      throw error
+    }
+
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Erro interno do servidor'
+    })
+  }
+})
+
+// Function to check active servers/services
+async function checkActiveServers(supabase: any) {
+  const servers: ServerStatus[] = []
+  let activeCount = 0
+
+  // Check database connection
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .limit(1)
+    
+    if (!error) {
+      servers.push({
+        name: 'Database (Supabase)',
+        status: 'active',
+        type: 'database',
+        responseTime: Date.now() // This would be calculated properly in real implementation
+      })
+      activeCount++
+    } else {
+      servers.push({
+        name: 'Database (Supabase)',
+        status: 'inactive',
+        type: 'database',
+        error: error.message
+      })
+    }
+  } catch (error) {
+    servers.push({
+      name: 'Database (Supabase)',
+      status: 'error',
+      type: 'database',
+      error: 'Connection failed'
+    })
+  }
+
+  // Check API server (self)
+  servers.push({
+    name: 'API Server',
+    status: 'active',
+    type: 'api',
+    uptime: process.uptime()
+  })
+  activeCount++
+
+  // Check if we have recent access logs (indicates proxy is working)
+  try {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+    const { data: recentLogs, error } = await supabase
+      .from('access_logs')
+      .select('id')
+      .gte('created_at', fiveMinutesAgo.toISOString())
+      .limit(1)
+
+    if (!error && recentLogs && recentLogs.length > 0) {
+      servers.push({
+        name: 'Proxy Service',
+        status: 'active',
+        type: 'proxy',
+        lastActivity: new Date().toISOString()
+      })
+      activeCount++
+    } else {
+      servers.push({
+        name: 'Proxy Service',
+        status: 'inactive',
+        type: 'proxy',
+        note: 'No recent activity'
+      })
+    }
+  } catch (error) {
+    servers.push({
+      name: 'Proxy Service',
+      status: 'unknown',
+      type: 'proxy',
+      error: 'Unable to check status'
+    })
+  }
+
+  // Check Redis/Cache (if configured)
+  // This would need to be implemented based on your Redis setup
+  servers.push({
+    name: 'Cache Service',
+    status: 'unknown',
+    type: 'cache',
+    note: 'Status check not implemented'
+  })
+
+  return {
+    count: activeCount,
+    details: servers
+  }
+}
+
+// Function to check for system alerts
+async function checkSystemAlerts(supabase: any, memoryPercentage: number, cpuPercentage: number) {
+  const alerts: SystemAlert[] = []
+
+  // Memory alerts
+  if (memoryPercentage > 90) {
+    alerts.push({
+      level: 'critical',
+      message: `Uso de memória crítico: ${memoryPercentage}%`,
+      type: 'memory',
+      timestamp: new Date().toISOString()
+    })
+  } else if (memoryPercentage > 80) {
+    alerts.push({
+      level: 'warning',
+      message: `Uso de memória alto: ${memoryPercentage}%`,
+      type: 'memory',
+      timestamp: new Date().toISOString()
+    })
+  }
+
+  // CPU alerts
+  if (cpuPercentage > 90) {
+    alerts.push({
+      level: 'critical',
+      message: `Uso de CPU crítico: ${cpuPercentage}%`,
+      type: 'cpu',
+      timestamp: new Date().toISOString()
+    })
+  } else if (cpuPercentage > 80) {
+    alerts.push({
+      level: 'warning',
+      message: `Uso de CPU alto: ${cpuPercentage}%`,
+      type: 'cpu',
+      timestamp: new Date().toISOString()
+    })
+  }
+
+  // Check for failed domains
+  try {
+    const { data: failedDomains, error } = await supabase
+      .from('domains')
+      .select('domain')
+      .eq('enabled', false)
+      .limit(5)
+
+    if (!error && failedDomains && failedDomains.length > 0) {
+      alerts.push({
+        level: 'warning',
+        message: `${failedDomains.length} domínios inativos detectados`,
+        type: 'domains',
+        timestamp: new Date().toISOString(),
+        details: failedDomains.map(d => d.domain)
+      })
+    }
+  } catch (error) {
+    // Ignore errors in alert checking
+  }
+
+  return alerts
+}

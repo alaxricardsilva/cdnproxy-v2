@@ -1,0 +1,1 @@
+UPDATE public.users SET supabase_auth_id = 'a9f43b5c-5061-41eb-aeb9-21d588c0db0d' WHERE email = 'alaxricardsilva@outlook.com';

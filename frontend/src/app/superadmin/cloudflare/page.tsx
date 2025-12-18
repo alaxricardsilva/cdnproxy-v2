@@ -1,227 +1,177 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import { useRouter } from 'next/navigation';
-import { Card, Typography, Grid, CircularProgress, Box, Button } from '@mui/material';
-import { LineChart, BarChart } from '@mui/x-charts';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+"use client"
 
-const isSuperadmin = true; // Aqui deve ser sua lógica real de verificação
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import { IconDotsVertical, IconPlus, IconRefresh, IconSearch } from "@tabler/icons-react"
+import { toast } from "sonner"
+import { API_BASE_URL } from "@/lib/api"
+import { AddZoneDialog } from "@/components/superadmin/cloudflare/add-zone-dialog"
+import { Badge } from "@/components/ui/badge"
 
-export default function CloudflareAdminPage() {
-  const router = useRouter();
-  const [zones, setZones] = useState<Array<{ id: string; name: string; status: string; expires_at?: string }>>([]);
-  const [monthlyTrafficData, setMonthlyTrafficData] = useState<Array<{ domain: string; download: number; upload: number }>>([]);
-  const [httpRequestsData, setHttpRequestsData] = useState<Array<{ date: string; requests: number }>>([]);
-  const [expiringDomainsData, setExpiringDomainsData] = useState<Array<{ date: string; expiring: number }>>([]);
-  const [statusDomainsData, setStatusDomainsData] = useState<Array<{ status: string; count: number }>>([]);
-  const [trafficPeaksData, setTrafficPeaksData] = useState<Array<{ hour: string; peaks: number }>>([]);
-  const [dnsChangesData, setDnsChangesData] = useState<Array<{ date: string; changes: number }>>([]);
-  const [geoAccessData, setGeoAccessData] = useState<Array<{ country: string; count: number }>>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isSuperadmin) {
-      router.replace('/');
-      return;
+interface Zone {
+    id: string
+    name: string
+    status: string
+    plan: {
+        name: string
     }
-    fetch('/api/cloudflare/zones')
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          setError(data.error);
-          toast.error(data.error);
-        } else {
-          setZones(data.zones);
-          setMonthlyTrafficData(data.monthlyTraffic || []);
-          setHttpRequestsData(data.httpRequests || []);
-          setExpiringDomainsData(data.expiringDomains || []);
-          setStatusDomainsData(data.statusDomains || []);
-          setTrafficPeaksData(data.trafficPeaks || []);
-          setDnsChangesData(data.dnsChanges || []);
-          setGeoAccessData(data.geoAccess || []);
-          toast.success('Dados carregados com sucesso!');
+    name_servers: string[]
+}
+
+export default function CloudflarePage() {
+    const [zones, setZones] = useState<Zone[]>([])
+    const [loading, setLoading] = useState(true)
+    const [searchTerm, setSearchTerm] = useState("")
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+
+    const fetchZones = async () => {
+        setLoading(true)
+        const token = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("access_token="))
+            ?.split("=")[1]
+
+        if (!token) return
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/superadmin/cloudflare/zones`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            if (!res.ok) {
+                const err = await res.text()
+                throw new Error(err || "Falha ao buscar zonas")
+            }
+            const data = await res.json()
+            setZones(data || [])
+        } catch (error) {
+            console.error(error)
+            toast.error("Erro ao carregar zonas da Cloudflare")
+        } finally {
+            setLoading(false)
         }
-      })
-      .catch(err => {
-        setError('Erro ao buscar domínios.');
-        toast.error('Erro ao buscar domínios.');
-      })
-      .finally(() => setLoading(false));
-  }, [isSuperadmin, router]);
-
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    if (type === 'success') toast.success(message);
-    else if (type === 'error') toast.error(message);
-    else toast.info(message);
-  };
-
-  const handleEdit = (zone: any) => {
-    showToast('Função de edição ainda não implementada.', 'info');
-  };
-
-  const handleCreateSubdomain = (zone: any) => {
-    showToast('Função de criação de subdomínio ainda não implementada.', 'info');
-  };
-
-  const handleDelete = async (cloudflare: any) => {
-    try {
-      await fetch(`/api/superadmin/cloudflare/${cloudflare.id}`, { method: 'DELETE' });
-      showToast('Registro excluído com sucesso!', 'success');
-      setZones(zones.filter((c: any) => c.id !== cloudflare.id));
-    } catch {
-      showToast('Erro ao excluir registro.', 'error');
     }
-  };
 
-  if (!isSuperadmin) {
-    return null;
-  }
+    useEffect(() => {
+        fetchZones()
+    }, [])
 
-  return (
-    <div style={{ padding: '2rem' }}>
-      <ToastContainer />
-      <h1>Cloudflare - Gestão de Domínios</h1>
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3, backgroundColor: '#18181b', color: '#fff', borderRadius: '18px', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
-            <Typography variant="subtitle2" sx={{ color: '#bdbdbd' }}>Total de Domínios</Typography>
-            <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#00bcd4' }}>{zones.length}</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3, backgroundColor: '#18181b', color: '#fff', borderRadius: '18px', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
-            <Typography variant="subtitle2" sx={{ color: '#bdbdbd' }}>Domínios Ativos</Typography>
-            <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#4caf50' }}>{zones.filter(z => z.status === 'active').length}</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3, backgroundColor: '#18181b', color: '#fff', borderRadius: '18px', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
-            <Typography variant="subtitle2" sx={{ color: '#bdbdbd' }}>Expirando em 7 dias</Typography>
-            <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#ff9800' }}>{zones.filter(z => {
-              if (!z.expires_at) return 0;
-              const expiresAt = new Date(z.expires_at);
-              const now = new Date();
-              const diffDays = (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-              return diffDays <= 7 && diffDays > 0;
-            }).length}</Typography>
-          </Card>
-        </Grid>
-      </Grid>
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3, bgcolor: '#23272f', color: '#fff', borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Tráfego Mensal por Domínio</Typography>
-            <LineChart
-              series={[
-                { data: monthlyTrafficData.map((d) => d.download), label: 'Download', color: '#00bcd4' },
-                { data: monthlyTrafficData.map((d) => d.upload), label: 'Upload', color: '#4caf50' }
-              ]}
-              xAxis={[{ scaleType: 'point', data: monthlyTrafficData.map((d) => d.domain) }]}
-              height={220}
+    const filteredZones = zones.filter(zone =>
+        zone.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+
+    return (
+        <div className="flex-1 space-y-4 p-8 pt-6" suppressHydrationWarning>
+            <div className="flex items-center justify-between space-y-2">
+                <h2 className="text-3xl font-bold tracking-tight">Cloudflare Zonas</h2>
+                <div className="flex items-center space-x-2">
+                    <Button variant="outline" size="icon" onClick={fetchZones} disabled={loading}>
+                        <IconRefresh className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button onClick={() => setIsAddDialogOpen(true)}>
+                        <IconPlus className="mr-2 h-4 w-4" /> Adicionar Site
+                    </Button>
+                </div>
+            </div>
+
+            <div className="flex items-center py-4">
+                <div className="relative w-full max-w-sm">
+                    <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Buscar domínio..."
+                        value={searchTerm}
+                        onChange={(event) => setSearchTerm(event.target.value)}
+                        className="pl-8"
+                    />
+                </div>
+            </div>
+
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Domínio</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Plano</TableHead>
+                            <TableHead>Nameservers</TableHead>
+                            <TableHead className="w-[70px]"></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {loading ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center">
+                                    Carregando...
+                                </TableCell>
+                            </TableRow>
+                        ) : filteredZones.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center">
+                                    Nenhuma zona encontrada.
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            filteredZones.map((zone) => (
+                                <TableRow key={zone.id}>
+                                    <TableCell className="font-medium">{zone.name}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={zone.status === 'active' ? 'default' : 'secondary'}>
+                                            {zone.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>{zone.plan.name}</TableCell>
+                                    <TableCell className="text-muted-foreground text-xs">
+                                        {zone.name_servers.join(", ")}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center space-x-2">
+                                            <Button variant="outline" size="sm" onClick={() => window.location.href = `/superadmin/cloudflare/${zone.id}`}>
+                                                Gerenciar
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Open menu</span>
+                                                        <IconDotsVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => navigator.clipboard.writeText(zone.id)}>
+                                                        Copiar ID
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => window.location.href = `/superadmin/cloudflare/${zone.id}`}>
+                                                        DNS & Config
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+
+            <AddZoneDialog
+                open={isAddDialogOpen}
+                onOpenChange={setIsAddDialogOpen}
+                onSuccess={fetchZones}
             />
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3, bgcolor: '#23272f', color: '#fff', borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Requisições HTTP</Typography>
-            <LineChart
-              series={[
-                { data: httpRequestsData.map((d) => d.requests), label: 'Requisições', color: '#ff9800' }
-              ]}
-              xAxis={[{ scaleType: 'point', data: httpRequestsData.map((d) => d.date) }]}
-              height={220}
-            />
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3, bgcolor: '#23272f', color: '#fff', borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Domínios Expirando</Typography>
-            <BarChart
-              series={[
-                { data: expiringDomainsData.map((d) => d.expiring), label: 'Expirando', color: '#ff9800' }
-              ]}
-              xAxis={[{ scaleType: 'point', data: expiringDomainsData.map((d) => d.date) }]}
-              height={220}
-            />
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3, bgcolor: '#23272f', color: '#fff', borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Status dos Domínios</Typography>
-            <BarChart
-              series={[
-                { data: statusDomainsData.map((d) => d.count), label: 'Status', color: '#00bcd4' }
-              ]}
-              xAxis={[{ scaleType: 'point', data: statusDomainsData.map((d) => d.status) }]}
-              height={220}
-            />
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3, bgcolor: '#23272f', color: '#fff', borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Picos de Tráfego</Typography>
-            <LineChart
-              series={[
-                { data: trafficPeaksData.map((d) => d.peaks), label: 'Picos', color: '#00bcd4' }
-              ]}
-              xAxis={[{ scaleType: 'point', data: trafficPeaksData.map((d) => d.hour) }]}
-              height={220}
-            />
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3, bgcolor: '#23272f', color: '#fff', borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Histórico de Alterações DNS</Typography>
-            <BarChart
-              series={[
-                { data: dnsChangesData.map((d) => d.changes), label: 'Alterações DNS', color: '#4caf50' }
-              ]}
-              xAxis={[{ scaleType: 'point', data: dnsChangesData.map((d) => d.date) }]}
-              height={220}
-            />
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={12}>
-          <Card sx={{ p: 3, bgcolor: '#23272f', color: '#fff', borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Distribuição Geográfica dos Acessos</Typography>
-            {/* MapChart removido pois não existe definição/importação. Substitua por outro componente ou mensagem se necessário. */}
-            <Typography variant="body2" sx={{ color: '#bdbdbd' }}>
-              Visualização geográfica não disponível.
-            </Typography>
-          </Card>
-        </Grid>
-      </Grid>
-      {loading && <CircularProgress sx={{ mt: 8 }} />}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {!loading && !error && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '2rem' }}>
-          <thead>
-            <tr>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left' }}>Domínio</th>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left' }}>ID</th>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left' }}>Status</th>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left' }}>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {zones.map(zone => (
-              <tr key={zone.id}>
-                <td>{zone.name}</td>
-                <td>{zone.id}</td>
-                <td>{zone.status}</td>
-                <td>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button variant="outlined" size="small" onClick={() => handleEdit(zone)}>Editar</Button>
-                    <Button variant="outlined" size="small" onClick={() => handleCreateSubdomain(zone)}>Criar Subdomínio</Button>
-                  </Box>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
+        </div>
+    )
 }

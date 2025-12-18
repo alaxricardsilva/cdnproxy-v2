@@ -1,214 +1,122 @@
-"use client";
-import { useEffect, useState } from 'react';
+"use client"
+
+import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { API_BASE_URL } from "@/lib/api"
+import { toast } from "sonner"
 import {
-  Card, Typography, Button, List, ListItem, ListItemText, Select, TextField, Box
-} from '@mui/material';
-import Grid from '@mui/material/Grid';
-import { formatDateToSaoPaulo } from '../../../utils/formatDate';
-import { LineChart } from '@mui/x-charts';
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    AreaChart,
+    Area,
+} from "recharts"
 
-const defaultMetrics = {
-  totalRequests: 0,
-  uniqueVisitors: 0,
-  bandwidth: 0,
-  healthStatus: 'Saudável',
-  healthLatency: 0,
-  cacheRate: 0,
-  avgTime: 0,
-  errorRate: 0,
-  uptime: 100,
-  requestsData: Array(30).fill(0),
-  visitorsData: Array(30).fill(0),
-};
-
-interface AccessLog {
-  accessed_at?: string;
-  client_ip?: string;
-  method?: string;
-  status_code?: number;
-  cache_status?: string;
-  episode_info?: any;
-  path?: string;
-  user_agent?: string;
-  country?: string;
-  city?: string;
-  isp?: string;
+interface TrafficData {
+    time: string
+    hits: number
 }
 
-export default function SuperadminAnalyticsPage() {
-  const [metrics, setMetrics] = useState(defaultMetrics);
-  const [logs, setLogs] = useState<AccessLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState('24h');
-  const [httpStatus, setHttpStatus] = useState('Todos');
-  const [search, setSearch] = useState('');
-
-  useEffect(() => {
-    setLoading(true);
-    fetch(`/api/superadmin/analytics?period=${period}&status=${httpStatus}&search=${search}`)
-      .then(res => res.json())
-      .then(data => {
-        setMetrics(data.metrics || defaultMetrics);
-        setLogs(data.logs || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [period, httpStatus, search]);
-
-  function formatBytes(bytes: number) {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
-    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-  }
-
-  return (
-    <Box sx={{ background: '#181818', color: '#fff', minHeight: '100vh', p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 1 }}>Analytics do Domínio</Typography>
-      <Typography variant="subtitle1" sx={{ mb: 2 }}>DNS 1 Teste Richard</Typography>
-      <Typography variant="caption" sx={{ mb: 2 }}>Última atualização: {logs.length > 0 && logs[0].accessed_at ? formatDateToSaoPaulo(logs[0].accessed_at) : '-'}</Typography>
-      <Button variant="contained" sx={{ float: 'right', mb: 2 }}>Atualizar</Button>
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        {/* Cards de métricas principais */}
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, bgcolor: '#222' }}>
-            <Typography variant="subtitle2">Total de Requisições</Typography>
-            <Typography variant="h6">{metrics.totalRequests}</Typography>
-            <Typography variant="caption">nas últimas 24 horas</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, bgcolor: '#222' }}>
-            <Typography variant="subtitle2">Visitantes Únicos</Typography>
-            <Typography variant="h6">{metrics.uniqueVisitors}</Typography>
-            <Typography variant="caption">IPs únicos</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, bgcolor: '#222' }}>
-            <Typography variant="subtitle2">Banda Transferida</Typography>
-            <Typography variant="h6">{formatBytes(metrics.bandwidth)}</Typography>
-            <Typography variant="caption">nas últimas 24 horas</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, bgcolor: '#222' }}>
-            <Typography variant="subtitle2">Status de Saúde</Typography>
-            <Typography variant="h6">{metrics.healthStatus}</Typography>
-            <Typography variant="caption">{metrics.healthLatency}ms resp. médio</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, bgcolor: '#222' }}>
-            <Typography variant="subtitle2">Erros</Typography>
-            <Typography variant="h6">{metrics.errorRate}%</Typography>
-            <Typography variant="caption">Erros nas últimas 24h</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, bgcolor: '#222' }}>
-            <Typography variant="subtitle2">Uptime</Typography>
-            <Typography variant="h6">{metrics.uptime}%</Typography>
-            <Typography variant="caption">Disponibilidade</Typography>
-          </Card>
-        </Grid>
-      </Grid>
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3, backgroundColor: '#18181b', color: '#fff', borderRadius: '18px', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
-            <Typography variant="subtitle2" sx={{ color: '#bdbdbd', mb: 2 }}>Total de Requisições - Últimos 30 dias</Typography>
-            <LineChart
-              height={220}
-              series={[{ data: metrics.requestsData, label: 'Requisições', color: '#00bcd4' }]}
-              xAxis={[{ scaleType: 'point', data: metrics.requestsData?.map((_, i) => `${i + 1}`) ?? [] }]}
-              sx={{ background: '#18181b', borderRadius: '18px', p: 2 }}
-              grid={{ vertical: true, horizontal: true }}
-            />
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3, backgroundColor: '#18181b', color: '#fff', borderRadius: '18px', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
-            <Typography variant="subtitle2" sx={{ color: '#bdbdbd', mb: 2 }}>Visitantes Únicos - Últimos 30 dias</Typography>
-            <LineChart
-              height={220}
-              series={[{ data: metrics.visitorsData, label: 'Visitantes', color: '#4caf50' }]}
-              xAxis={[{ scaleType: 'point', data: metrics.visitorsData?.map((_, i) => `${i + 1}`) ?? [] }]}
-              sx={{ background: '#18181b', borderRadius: '18px', p: 2 }}
-              grid={{ vertical: true, horizontal: true }}
-            />
-          </Card>
-        </Grid>
-      </Grid>
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, bgcolor: '#222' }}>
-            <Typography variant="subtitle2">Taxa de Cache</Typography>
-            <Typography variant="h6">{metrics.cacheRate}%</Typography>
-            <Typography variant="caption">Eficiência do cache</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, bgcolor: '#222' }}>
-            <Typography variant="subtitle2">Tempo Médio</Typography>
-            <Typography variant="h6">{metrics.avgTime}ms</Typography>
-            <Typography variant="caption">Tempo de resposta</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, bgcolor: '#222' }}>
-            <Typography variant="subtitle2">Taxa de Erro</Typography>
-            <Typography variant="h6">{metrics.errorRate}%</Typography>
-            <Typography variant="caption">Erros nas últimas 24h</Typography>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, bgcolor: '#222' }}>
-            <Typography variant="subtitle2">Uptime</Typography>
-            <Typography variant="h6">{metrics.uptime}%</Typography>
-            <Typography variant="caption">Disponibilidade</Typography>
-          </Card>
-        </Grid>
-      </Grid>
-      {/* Filtros de Logs */}
-      <Card sx={{ p: 2, bgcolor: '#222', mb: 2 }}>
-        <Typography variant="h6">Filtros de Logs</Typography>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12}>
-            <Select value={period} onChange={e => setPeriod(e.target.value)}>
-              <MenuItem value="24h">Últimas 24 horas</MenuItem>
-              <MenuItem value="7d">Últimos 7 dias</MenuItem>
-            </Select>
-          </Grid>
-          <Grid item xs={12}>
-            <Select value={httpStatus} onChange={e => setHttpStatus(e.target.value)}>
-              <MenuItem value="Todos">Todos</MenuItem>
-              <MenuItem value="200">200</MenuItem>
-              <MenuItem value="404">404</MenuItem>
-              <MenuItem value="500">500</MenuItem>
-            </Select>
-          </Grid>
-          <Grid item xs={12}>
-            <TextField value={search} onChange={e => setSearch(e.target.value)} placeholder="IP, URL ou User Agent..." size="small" sx={{ bgcolor: '#333', color: '#fff' }} />
-          </Grid>
-        </Grid>
-      </Card>
-      {/* Logs de acesso */}
-      <Card sx={{ p: 2, bgcolor: '#222', mb: 2 }}>
-        <Typography variant="h6">Logs de Acesso - Últimas 24 Horas</Typography>
-        {loading ? <Typography>Carregando...</Typography> : logs.length === 0 ? <Typography>Não há registros de acesso para os filtros selecionados.</Typography> : (
-          <List>
-            {logs.map((log: any, idx: number) => (
-              <ListItem key={idx}>
-                <ListItemText
-                  primary={`IP: ${log.client_ip || '-'} | Método: ${log.method || '-'} | Status: ${log.status_code || '-'} | Proxy/Redirect: ${log.cache_status || '-'} | Episódio: ${log.episode_info ? JSON.stringify(log.episode_info) : '-'} | Caminho: ${log.path || '-'} | User-Agent: ${log.user_agent || '-'}`}
-                  secondary={`Acessado em: ${log.accessed_at ? formatDateToSaoPaulo(log.accessed_at) : '-'} | País: ${log.country || '-'} | Cidade: ${log.city || '-'} | ISP: ${log.isp || '-'}`}
-                />
-              </ListItem>
-            ))}
-          </List>
-        )}
-      </Card>
-    </Box>
-  );
+interface AnalyticsSummary {
+    total_users: number
+    total_payments: number
+    total_revenue: number
 }
-import { MenuItem } from '@mui/material';
+
+// Mock data if backend is empty for visualization
+const mockData = [
+    { time: "00:00", hits: 0 },
+]
+
+export default function AnalyticsPage() {
+    const [data, setData] = useState<TrafficData[]>([])
+    const [summary, setSummary] = useState<AnalyticsSummary>({ total_users: 0, total_revenue: 0, total_payments: 0 })
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const token = document.cookie.split("; ").find((row) => row.startsWith("access_token="))?.split("=")[1]
+                const headers = { Authorization: `Bearer ${token}` }
+
+                // Fetch Business Analytics
+                const analyticsRes = await fetch(`${API_BASE_URL}/api/superadmin/analytics`, { headers })
+                if (analyticsRes.ok) {
+                    setSummary(await analyticsRes.json())
+                }
+
+                // Fetch Traffic Chart (Streaming Hits)
+                const chartRes = await fetch(`${API_BASE_URL}/api/superadmin/analytics/streaming-hits`, { headers })
+                if (chartRes.ok) {
+                    const chartData = await chartRes.json()
+                    // If empty, maybe show mock? Or just empty.
+                    if (chartData && chartData.length > 0) {
+                        setData(chartData)
+                    } else {
+                        // setData(mockData) // Optional: Use mock if real data is empty for demo
+                    }
+                }
+            } catch (error) {
+                toast.error("Erro ao carregar dados de analytics")
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [])
+
+    return (
+        <div className="flex-1 space-y-4 p-8 pt-6">
+            <h2 className="text-3xl font-bold tracking-tight">Streaming Overview</h2>
+
+            <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Usuários Totais</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{summary.total_users || 0}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Pagamentos Confirmados</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{summary.total_payments || 0}</div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Card className="col-span-4">
+                <CardHeader>
+                    <CardTitle>Tráfego de Streaming (Hits / Hora)</CardTitle>
+                </CardHeader>
+                <CardContent className="pl-2">
+                    <div className="h-[350px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={data.length > 0 ? data : mockData}>
+                                <defs>
+                                    <linearGradient id="colorHits" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <XAxis dataKey="time" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
+                                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                <Tooltip contentStyle={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }} />
+                                <Area type="monotone" dataKey="hits" stroke="#8884d8" fillOpacity={1} fill="url(#colorHits)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}

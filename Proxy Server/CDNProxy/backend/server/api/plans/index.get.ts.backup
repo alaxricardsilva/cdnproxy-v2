@@ -1,0 +1,68 @@
+import { createClient } from '@supabase/supabase-js'
+import { defineEventHandler, createError } from 'h3'
+
+export default defineEventHandler(async (event) => {
+  try {
+    // Obter configuração do runtime
+    const config = useRuntimeConfig()
+    
+    // Inicializar cliente Supabase
+    const supabase = createClient(
+      config.supabaseUrl!,
+      config.supabaseServiceKey!
+    )
+
+    console.log('🔍 Buscando planos no Supabase...')
+
+    // Buscar todos os planos ativos
+    const { data: plans, error } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('is_active', true)
+      .order('monthly_price', { ascending: true })
+
+    if (error) {
+      console.error('❌ Erro ao buscar planos:', error)
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Erro ao buscar planos'
+      })
+    }
+
+    console.log(`✅ Encontrados ${plans?.length || 0} planos`)
+    console.log('📋 Planos encontrados:', plans)
+
+    // Mapear os dados para o formato esperado pelo frontend
+    const mappedPlans = plans?.map(plan => ({
+      id: plan.id,
+      name: plan.name,
+      description: plan.description,
+      price: plan.monthly_price,
+      monthly_price: plan.monthly_price,
+      yearly_price: plan.yearly_price,
+      max_domains: plan.max_domains,
+      max_bandwidth_gb: plan.max_bandwidth_gb,
+      max_requests_per_month: null, // Coluna removida da tabela
+      features: typeof plan.features === 'string' ? JSON.parse(plan.features) : plan.features,
+      is_active: plan.is_active,
+      status: plan.status
+    })) || []
+
+    return {
+      success: true,
+      data: mappedPlans,
+      message: 'Planos recuperados com sucesso'
+    }
+
+  } catch (error: any) {
+    console.error('❌ Erro interno:', error)
+    if (error.statusCode) {
+      throw error
+    }
+
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Erro interno do servidor'
+    })
+  }
+})

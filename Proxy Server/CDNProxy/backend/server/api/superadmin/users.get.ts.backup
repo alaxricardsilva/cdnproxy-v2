@@ -1,0 +1,146 @@
+import { createClient } from '@supabase/supabase-js'
+
+export default defineEventHandler(async (event) => {
+  try {
+    // Get query parameters
+    const query = getQuery(event)
+    const page = parseInt(query.page as string) || 1
+    const limit = parseInt(query.limit as string) || 20
+    const search = query.search as string || ''
+    const role = query.role as string || ''
+    const status = query.status as string || ''
+
+    // Get user from headers
+    const authHeader = getHeader(event, 'authorization')
+    if (!authHeader) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token de autenticação necessário'
+      })
+    }
+
+    // Initialize Supabase client
+    const config = useRuntimeConfig()
+    const supabase = createClient(
+      config.supabaseUrl,
+      config.supabaseServiceKey
+    )
+
+    // Verify JWT token and check superadmin role
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+    if (authError || !user) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token inválido'
+      })
+    }
+
+    // Check if user has superadmin privileges
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('email', user.email)
+      .single()
+
+    if (!userProfile || userProfile.role !== 'SUPERADMIN') {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Acesso negado - apenas superadmin'
+      })
+    }
+
+    // Build users query
+    let usersQuery = supabase
+      .from('users')
+      .select(`
+        id,
+        email,
+        name,
+        role,
+        company,
+        whatsapp,
+        status,
+        observations,
+        two_factor_enabled,
+        created_at,
+        updated_at
+      `, { count: 'exact' })
+
+    // Add search filter
+    if (search) {
+      usersQuery = usersQuery.or(`email.ilike.%${search}%,name.ilike.%${search}%,company.ilike.%${search}%`)
+    }
+
+    // Add role filter
+    if (role) {
+      usersQuery = usersQuery.eq('role', role)
+    }
+
+    // Add status filter
+    if (status) {
+      usersQuery = usersQuery.eq('status', status)
+    }
+
+    // Add pagination
+    const offset = (page - 1) * limit
+    usersQuery = usersQuery
+      .range(offset, offset + limit - 1)
+      .order('created_at', { ascending: false })
+
+    // Execute query
+    const { data: users, error, count } = await usersQuery
+
+    if (error) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Erro ao buscar usuários'
+      })
+    }
+
+    // Get additional statistics
+    const { data: stats } = await supabase
+      .from('users')
+      .select('role, status')
+
+    const userStats = {
+      total: count || 0,
+      active: stats?.filter(u => u.status === 'ACTIVE').length || 0,
+      inactive: stats?.filter(u => u.status === 'INACTIVE').length || 0,
+      suspended: stats?.filter(u => u.status === 'SUSPENDED').length || 0,
+      byRole: {
+        superadmin: stats?.filter(u => u.role === 'SUPERADMIN').length || 0,
+        admin: stats?.filter(u => u.role === 'ADMIN').length || 0,
+        user: stats?.filter(u => u.role === 'USER').length || 0
+      }
+    }
+
+    // Calculate pagination info
+    const totalPages = Math.ceil((count || 0) / limit)
+
+    return {
+      success: true,
+      data: users,
+      stats: userStats,
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    }
+
+  } catch (error) {
+    if (error.statusCode) {
+      throw error
+    }
+
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Erro interno do servidor'
+    })
+  }
+})

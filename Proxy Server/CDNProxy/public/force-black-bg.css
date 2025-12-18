@@ -1,0 +1,60 @@
+/* CSS para forçar fundo preto em produção - máxima prioridade */
+html, body, #__next, #root, .next-root {
+  background: #000000 !important;
+  background-image: none !important;
+  background-color: #000000 !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  color: #ffffff !important;
+}
+
+/* Remove qualquer gradiente ou imagem de fundo */
+*, *::before, *::after {
+  background-image: none !important;
+  color: #ffffff !important;
+}
+
+/* Específico para página de login */
+body:has([class*="login"]), 
+body:has([href*="login"]),
+div[class*="min-h-screen"]:has([class*="bg-black"]),
+.login-page {
+  background: #000000 !important;
+  background-image: none !important;
+  background-color: #000000 !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  color: #ffffff !important;
+}
+
+/* Remove pseudo-elementos que podem conter gradientes */
+body::before, body::after, 
+html::before, html::after,
+#__next::before, #__next::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Força fundo preto em todos os containers principais */
+[data-nextjs-scroll-focus-boundary],
+main, .main, #main,
+.app, #app, .App {
+  background: #000000 !important;
+  background-image: none !important;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Força cor branca em textos, inputs e elementos */
+p, span, div, h1, h2, h3, h4, h5, h6, 
+input, textarea, select, button, label,
+.text-gray-900, .text-black, .text-slate-900 {
+  color: #ffffff !important;
+}
+
+/* Força cor branca em links */
+a, a:visited, a:hover, a:active {
+  color: #ffffff !important;
+}

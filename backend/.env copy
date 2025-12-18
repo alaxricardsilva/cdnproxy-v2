@@ -1,0 +1,16 @@
+DATABASE_URL="postgresql://postgres:a2BDQaipW1KSHgc3@db.vpfdttgdfshvabliicyb.supabase.co:5432/postgres"
+SUPABASE_URL="https://vpfdttgdfshvabliicyb.supabase.co"
+SUPABASE_API_KEY="sb_publishable_sxvPmk9b7fzgd53VhrhFfQ_HZnwk2yr"
+SUPABASE_SECRET_KEY="sb_secret_eCVQNTHPG-vHat0BXkuh0w_vDtN103-"
+SUPABASE_JWT_ALGORITHM="RS256"
+SUPABASE_JWT_SIGNING_KEY="https://vpfdttgdfshvabliicyb.supabase.co/auth/v1/.well-known/jwks.json"
+MERCADOPAGO_ACCESS_TOKEN="<SEU-ACCESS-TOKEN>"
+MERCADOPAGO_PUBLIC_KEY="<SUA-PUBLIC-KEY>"
+MERCADOPAGO_CLIENT_ID="<SEU-CLIENT-ID>"
+MERCADOPAGO_CLIENT_SECRET="<SEU-CLIENT-SECRET>"
+MERCADOPAGO_WEBHOOK_URL="https://seudominio.com/webhook/mercadopago"
+SUPABASE_DB_HOST=db.vpfdttgdfshvabliicyb.supabase.co
+SUPABASE_DB_NAME=postgres
+SUPABASE_DB_USER=postgres
+SUPABASE_DB_PASSWORD=a2BDQaipW1KSHgc3
+SUPABASE_DB_PORT=5432

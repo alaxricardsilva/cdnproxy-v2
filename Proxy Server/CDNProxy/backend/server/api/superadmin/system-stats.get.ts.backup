@@ -1,0 +1,121 @@
+import { defineEventHandler, createError, getHeader } from 'h3'
+import { createClient } from '@supabase/supabase-js'
+import * as os from 'os'
+
+export default defineEventHandler(async (event) => {
+  try {
+    // Obter configuração do runtime
+    const config = useRuntimeConfig()
+
+    // Get user from headers
+    const authHeader = getHeader(event, 'authorization')
+    if (!authHeader) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token de autenticação necessário'
+      })
+    }
+
+    // Initialize Supabase client
+    const supabase = createClient(
+      config.supabaseUrl!,
+      config.supabaseServiceKey!
+    )
+
+    // Verify JWT token and check superadmin role
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+    if (authError || !user) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Token inválido'
+      })
+    }
+
+    // Check if user has superadmin privileges
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('email', user.email)
+      .single()
+
+    if (!profile || profile.role !== 'SUPERADMIN') {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Acesso negado'
+      })
+    }
+
+    // Get system statistics
+    const [
+      { count: totalUsers },
+      { count: totalDomains },
+      { count: totalRequests }
+    ] = await Promise.all([
+      supabase.from('users').select('*', { count: 'exact', head: true }),
+      supabase.from('domains').select('*', { count: 'exact', head: true }),
+      supabase.from('analytics').select('*', { count: 'exact', head: true })
+    ])
+
+    // Get system health metrics
+    const memoryUsage = process.memoryUsage()
+    const cpuUsage = process.cpuUsage()
+    const loadAverage = os.loadavg()
+    const uptime = process.uptime()
+    const totalMemory = os.totalmem()
+    const freeMemory = os.freemem()
+
+    const systemStats = {
+      users: {
+        total: totalUsers || 0,
+        active: 0, // Would need additional query for active users
+        new_today: 0 // Would need additional query for today's registrations
+      },
+      domains: {
+        total: totalDomains || 0,
+        active: 0, // Would need additional query for active domains
+        inactive: 0
+      },
+      requests: {
+        total: totalRequests || 0,
+        today: 0, // Would need additional query for today's requests
+        last_hour: 0
+      },
+      system: {
+        uptime: Math.floor(uptime),
+        memory: {
+          used: memoryUsage.heapUsed,
+          total: memoryUsage.heapTotal,
+          system_total: totalMemory,
+          system_free: freeMemory,
+          usage_percentage: Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100)
+        },
+        cpu: {
+          load_average: loadAverage,
+          usage_user: cpuUsage.user,
+          usage_system: cpuUsage.system
+        },
+        node_version: process.version,
+        platform: os.platform(),
+        arch: os.arch()
+      }
+    }
+
+    return {
+      success: true,
+      data: systemStats,
+      timestamp: new Date().toISOString()
+    }
+
+  } catch (error: any) {
+    if (error.statusCode) {
+      throw error
+    }
+
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Erro interno do servidor'
+    })
+  }
+})
