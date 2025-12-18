@@ -1,0 +1,135 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Profile {
+  id        Int     @id @default(autoincrement())
+  userId    String  // UUID do Supabase Auth
+  bio       String?
+  avatarUrl String?
+}
+
+model Configuration {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model Domain {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+  status       String?
+  streamBaseUrl String?
+  url          String?
+  expiration   DateTime?
+  targetUrl    String?
+  type         String?
+  userId       String   // UUID do Supabase Auth
+}
+
+model GeneralConfig {
+  id        Int    @id @default(autoincrement())
+  configKey String @unique
+  configVal String
+}
+
+model SuperadminProfile {
+  id    Int    @id @default(autoincrement())
+  name  String
+  email String @unique
+}
+
+model Plan {
+  id       Int    @id @default(autoincrement())
+  name     String
+  price    Float
+}
+
+model Payment {
+  id     Int    @id @default(autoincrement())
+  amount Float
+  status String
+  userId String // UUID do Supabase Auth
+}
+
+model PixTransaction {
+  id     Int    @id @default(autoincrement())
+  amount Float
+  status String
+  userId String // UUID do Supabase Auth
+}
+
+model AccessLog {
+  id                Int      @id @default(autoincrement())
+  domain_id         Int?
+  path              String?
+  method            String?
+  status_code       Int?
+  client_ip         String?
+  user_agent        String?
+  device_type       String?
+  country           String?
+  city              String?
+  isp               String?
+  response_time     Int?
+  bytes_transferred Int?
+  cache_status      String?
+  episode_info      Json?
+  session_id        String?
+  change_type       String?
+  episode_changed   Boolean?
+  content_id        String?
+  accessed_at       DateTime @default(now())
+}
+
+model GeolocationCache {
+  id         Int      @id @default(autoincrement())
+  ip         String   @unique
+  country    String?
+  city       String?
+  isp        String?
+  deviceInfo Json?
+  createdAt  DateTime @default(now())
+}
+
+model MonthlyTraffic {
+  id        Int      @id @default(autoincrement())
+  month     String
+  trafficMB Float
+  createdAt DateTime @default(now())
+}
+
+model DashboardData {
+  id        Int      @id @default(autoincrement())
+  metric    String?
+  value     Float?
+  createdAt DateTime @default(now())
+}
+
+model MercadopagoTransaction {
+  id        Int      @id @default(autoincrement())
+  userId    String?  // UUID do Supabase Auth
+  amount    Float?
+  status    String?
+  createdAt DateTime @default(now())
+}
+
+model StreamingProxy {
+  id        Int      @id @default(autoincrement())
+  name      String
+  url       String
+  status    String?
+  createdAt DateTime @default(now())
+}
+
+// Tabela extra para roles customizadas
+model UserRole {
+  id     Int    @id @default(autoincrement())
+  userId String // UUID do Supabase Auth
+  role   String
+}
